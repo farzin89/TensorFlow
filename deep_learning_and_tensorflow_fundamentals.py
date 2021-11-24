@@ -315,3 +315,234 @@ x,tf.transpose(x), tf.reshape(x,shape=(2,3))
 
 # Try matrix multiplication with transpose rather than reshape
 tf.matmul(tf.transpose(x),y)
+
+"""**The dot product**
+
+Matrix multiplication is also referred to as the dot product.
+
+you can perform matrix multiplication using :    
+*' tf.matmul()
+*' tf.tensordot()'
+
+"""
+
+x ,y
+
+# perform the dot product on x and y (requires x or y to be transposed)
+
+tf.tensordot(tf.transpose(x),y,axes=1)
+
+# perform matrix multiplication between x and y(transposed)
+tf.matmul(x,tf.transpose(y))
+
+# perform matrix multiplication between x and y(reshaped)
+tf.matmul(x,tf.reshape(y,shape=(2,3)))
+
+# check the values of y,reshape y and transposed y
+print("normal y:")
+print(y,"\n") #:"\n" is for newline
+
+print("y reshaped to (2,3):")
+print(tf.reshape(y,(2,3)),"\n")
+
+print("y transposed:")
+print(tf.transpose(y))
+
+tf.matmul(x,tf.transpose(y))
+
+"""Generally, when performing matrix multiplication on two tensors and one of the axes does not line up,you will transpose(rather than reshape) one of the tensors to get satisfy the matrix multiplication ruls.
+
+### changing the datatype of a tensor
+"""
+
+# creat new rensor with default datatype (float 32)
+
+B = tf.constant([1.7,7.4])
+B.dtype
+
+c = tf.constant([7,10])
+c,c.dtype
+
+# change from float32 to float 16 (reduce percision)
+D = tf.cast(B, dtype=tf.float16)
+D , D.dtype
+
+# change from int32 to float32 
+E = tf.cast(c,dtype=tf.float32)
+E
+
+E_float16 = tf.cast(E,dtype=tf.float16)
+E_float16
+
+
+
+"""### Aggregating tensors###
+
+Aggregatibg tensors = condensing them from multiple values down to a smaller amount of values.
+"""
+
+# Get the absolute values 
+
+D = tf.constant([-7,-10])
+D
+
+tf.abs(D)
+
+"""Lets go through the following forms of aggregation:    
+
+* Get the minimum
+* Get the maximum 
+* Get the mean of a tensor
+* Get the sum of a tensor
+"""
+
+# creat a random tensor with values between 0 and 100 of size 50
+
+E = tf.constant(np.random.randint(0,100,size = 50 ))
+E
+
+tf.size(E) , E.shape, E.ndim
+
+# find the minimum
+tf.reduce_min(E)
+
+# Find the maximum
+
+tf.reduce_max(E)
+
+# find the mean 
+tf.reduce_mean(E)
+
+# find the sum
+tf.reduce_sum(E)
+
+"""** Excercise** with what we have just learned , find the variance and standard deviation of our E tensor using Tensorflow methods.
+
+"""
+
+# find the variance of our tensor
+tf.reduce_var(E)
+
+# To find the variance of our tensor, we need access to tensorflow_probability 
+import tensorflow_probability as tfp 
+tfp.stats.variance(E)
+
+# find the standard deviation 
+
+tf.math.reduce_std(tf.cast(E, dtype = tf.float32))
+
+# Find the variance of our E tensor 
+tf.math.reduce_variance(tf.cast(E,dtype=tf.float32))
+
+"""### find the positional maximum and minimum of a tensor"""
+
+# Creat a new tensor for finding positional minimum and maximum.
+
+F = tf.random.uniform(shape=[50]) # and also we can make with "tf.random.set_seed(42))"
+F
+
+# find the positional maximum 
+tf.argmax(F)
+
+# index on our largest value position
+F[tf.argmax(F)]
+
+# find the max value of F
+tf.reduce_max(F)
+
+# check for equality 
+F[tf.argmax(F)]== tf.reduce_max(F)
+
+# find the positional minimum 
+tf.argmin(F)
+
+#find the minimum using the positional minimum index
+
+F[tf.argmin(F)]
+
+"""### Squeezing a tensor (removing all single dimensions )
+
+"""
+
+# Create a tensor to get started
+tf.random.set_seed(42)
+g = tf.constant(tf.random.uniform(shape=[50]),shape = (1,1,1,1,50))
+g
+
+g.shape
+
+g_squeezed = tf.squeeze(g)
+g_squeezed, g_squeezed.shape
+
+"""### one_hot encoding tensors"""
+
+# Creat a list of indices
+
+some_list = [0,1,2,3]  # could be red, green , blue, purple
+
+# one hot encode our list of indices
+
+tf.one_hot(some_list,depth= 4)
+
+# Specify custom values for one hot encoding
+
+tf.one_hot(some_list,depth=4,on_value="yo I love deep learning ", off_value="I also liketo dance")
+
+"""### Squaring , log ,square root"""
+
+# Creat a new tensor
+H = tf.range(1,10)
+H
+
+#square it
+
+tf.square(H)
+
+# Find the squareroot (will error, method requires non_int type)
+
+tf.sqrt(H)
+
+# Find the squareroot 
+tf.sqrt(tf.cast(H, dtype = tf.float32))
+
+# find the log ( will error)
+tf.math.log(H)
+
+# Find the log
+
+tf.math.log(tf.cast(H, dtype=tf.float32))
+
+"""### Tensors and Numpy 
+
+TensorFlow interacts beautifully with numpy array 
+
+"""
+
+# Creat a tensor directly from a numpy array
+
+  j = tf.constant(np.array([3.,7.,10.]))
+  j
+
+# convert our tensor back to a numpy array 
+
+np.array(j),type(np.array(j))
+
+# Convert tensor j to a numpy array 
+j.numpy(),type(j.numpy())
+
+j = tf.constant([3.])
+j.numpy()[0]
+
+# The default types of each are slightly different
+numpy_j = tf.constant(np.array([3.,7.,10.]))
+tensor_j = tf.constant([3.,7.,10.])
+# cheack the datatypes od each 
+numpy_j.dtype,tensor_j.dtype
+
+"""### Finding access to GPUs"""
+
+tf.config.list_physical_devices()
+
+"""*** Note:** If you have access to a CUDA-enable GPU, TensorFlow will automatically use it whenever possible ."""
+
+
