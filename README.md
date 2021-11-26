@@ -15,9 +15,3 @@
 3. using          
 
 ## ghraphe Installation  
-
-
-
-> hi farzin how are you
-hghghjfh 
-jfjfjn
