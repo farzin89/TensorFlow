@@ -77,23 +77,29 @@ plt.scatter(x,y)
 3. **Fitting the a model** - learning the model try to find patterns between x & y (features and labels). 
 """
 
-# set random seeed
-
+# Set random seed
 tf.random.set_seed(42)
 
-# 1. Create a model using the Sequentioal API
-
-model = tf.keras.Sequential([ 
+# Create a model (same as above)
+model = tf.keras.Sequential([
   tf.keras.layers.Dense(1)
 ])
 
-# 2. Compile the model 
+# Compile model (same as above)
+model.compile(loss=tf.keras.losses.mae,
+              optimizer=tf.keras.optimizers.SGD(),
+              metrics=["mae"])
 
-model.compile(loss = tf.keras.losses.mae, # mae is short for mean absolute error
-              optimizer = tf.keras.optimizers.SGD(),#sdg is short for stochastic gradient descent 
-              metrics = ["mae"])
+# Fit model (this time we'll train for longer)
+model.fit(tf.expand_dims(x,axis=-1), y, epochs=5) # train for 100 epochs not 10
 
-# 3. Fit the model
+x,y
 
- model.fit(x,y, epochs=5)
+# Try and make a prediction using our model
+y_pred =model.predict([17.0])
+y_pred
+
+y_pred + 11
+
+"""## impriving our model"""
 
