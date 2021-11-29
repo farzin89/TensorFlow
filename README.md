@@ -37,7 +37,7 @@ tweak a model -> fit it -> evaluate it ...
  "Visualize, visualize,visualize"
 
  its a good idea to visualize:
- * The data - what data are we wworking with ? what does it look like?  
+ * The data - what data are we working with ? what does it look like?  
  * The model itself - what does our model look like ?
  * The training of a model - how does a model perform while it learns? 
  * The predictions of the model - how do the predictions of a model line up aqainst the qround truth( the original labels)  
