@@ -24,3 +24,20 @@ we can imporve our model,by altering the steps we took to create a model.
 5. change the learning rate 
 6. fitting on more data
 7. fitting for longer 
+
+## Evaluating a model 
+
+In practice , a typical workflow you will go through when building neural networks is :
+
+'''
+Build amodel -> fit it -> evaluate it-> tweak a model -> fit it -> evaluate it ->
+tweak a model -> fit it -> evaluate it ...
+'''
+ when it comes to evaluation... there are 3 words you should memorize:
+ "Visualize, visualize,visualize"
+
+ its a good idea to visualize:
+ * The data - what data are we wworking with ? what does it look like?  
+ * The model itself - what does our model look like ?
+ * The training of a model - how does a model perform while it learns? 
+ * The predictions of the model - how do the predictions of a model line up aqainst the qround truth( the original labels)  
