@@ -15,3 +15,12 @@ we can imporve our model,by altering the steps we took to create a model.
 2. **Compilig a model** - here we might change the optimization function or perhaps the **learning rate** of the optimization function.
 
 3. **Fiting a model** - here we might fit a model for more **epochs**(give the more  more examples to learn from).
+
+# common ways to improve a deep model:
+1. adding layers 
+2. increase the number of hidden units
+3. change the activation functions
+4. change the optimization function
+5. change the learning rate 
+6. fitting on more data
+7. fitting for longer 
