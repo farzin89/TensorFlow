@@ -49,3 +49,11 @@ tweak a model -> fit it -> evaluate it ...
 * **Test set** - the model gets evaluated on this data to test what is has learned, this set is typically 10-15% of the total data avaiable .
 
 (for example 1. course material = training set and 2. practice exam =validation set and 3 . final exam (test set)
+
+### the 3 sets ...
+
+* **Training set** - the model learns from this data, which is typically 70 - 80 % of the total data you have available .
+* **Validation set** - the model gets tuned on this data, which is typically 10-15% of the data avaiable .
+* **Test set** - the model gets evaluated on this data to test what is has learned, this set is typically 10-15% of the total data avaiable .
+
+(for example 1. course material = training set and 2. practice exam =validation set and 3 . final exam (test set)
