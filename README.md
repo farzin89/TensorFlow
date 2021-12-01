@@ -58,3 +58,19 @@ since we are working on a regression , two of the mainn metrics :
 
 * MAE - mean absolute error,"on average, how wrong is each of my model's predictions"
 * MSE - mean square error, " square the average errors"
+
+### Running experiments to improve our model 
+
+# Build a model -> fit it -> evaluate it -> tweak it -> fit it -> evaluate it -> tweak it -> fit it -> evaluate it ...
+
+1. Get more data - get more examples for your model to train on (more opportunities to learn patterns or relationships between features and labels)
+
+2. Make your model larger ( using a more complex model)- this might come in the form of more layers or more hidden units in each layer.
+
+3. Train for longer - give your model more of a chance to find patterns in the data.
+
+# lets do 3 modelling experiments:    
+
+1. model 1 : - same as the original model, 1 layer, trained for 100 epochs.
+2. model 2 : - 2 layers, trained for 100 epochs
+3. model 3 : - 2 layers, trained for 500 epochs
