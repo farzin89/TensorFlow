@@ -74,3 +74,19 @@ since we are working on a regression , two of the mainn metrics :
 1. model 1 : - same as the original model, 1 layer, trained for 100 epochs.
 2. model 2 : - 2 layers, trained for 100 epochs
 3. model 3 : - 2 layers, trained for 500 epochs
+
+#Note:
+#### one of your main goals should be to minimize the time between your experiments. 
+### the more experiments you do, the more things you will figure out which don't work and in turn, get closer to figuring out does work. Remember the machines learning practioner's motto: "experiment","experiment",experiment".
+
+ ## Tracking your experiments
+
+ #### one really good habit in machine learning modelling is to track the results of your experiments.
+
+#### and when doing so, it can be tedious if you are running lots of experiments
+### luckily, there are tools to help us.
+
+## Resource: as you build more models, you will want to look into using :     
+#### 1. TensorBoard -  a component of the Tensorflow library to help track modelling experiments 
+#### 2 . Weights & Biases -  a tool for tracking all of kinds of machine learning experiments 
+
