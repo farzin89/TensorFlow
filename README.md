@@ -90,3 +90,12 @@ since we are working on a regression , two of the mainn metrics :
 #### 1. TensorBoard -  a component of the Tensorflow library to help track modelling experiments 
 #### 2 . Weights & Biases -  a tool for tracking all of kinds of machine learning experiments 
 
+
+## saving our models
+
+#### saving our models allows us to use them outside of google Colab(or wherever they were trained) such as in web application or a mobile app.
+
+## there are two main formats we can save our model's too:
+### 1. The SaveModel format
+### 2. The HDF5 format 
+
