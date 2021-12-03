@@ -99,3 +99,21 @@ since we are working on a regression , two of the mainn metrics :
 ### 1. The SaveModel format
 ### 2. The HDF5 format 
 
+## Download a model (or any other file) from google colab
+
+#### if you want to download your files from Google Colab:     
+
+#### 1 . you can go to the "files" tab and right click on the file you are after and click "download".
+
+#### 2. Use code(see the cell below)
+
+#### 3. save it to google drive by connecting Google Drive and copying it there (see 2nd code cell below)
+
+
+### Note : when in our dataset we have number and letters we can use the one hot encoding 
+
+ # Let's try one- hot encode our DataFrame so it's all numbers
+ pd.get_dummies(insurance)
+
+
+
