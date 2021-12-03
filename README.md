@@ -112,7 +112,7 @@ since we are working on a regression , two of the mainn metrics :
 
 ### Note : when in our dataset we have number and letters we can use the one hot encoding 
 
- # Let's try one- hot encode our DataFrame so it's all numbers
+ ### Let's try one- hot encode our DataFrame so it's all numbers
  pd.get_dummies(insurance)
 
 
