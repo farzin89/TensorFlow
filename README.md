@@ -114,6 +114,7 @@ since we are working on a regression , two of the mainn metrics :
 
  ### Let's try one- hot encode our DataFrame so it's all numbers
  pd.get_dummies(insurance)
+ ((insurance is our dataset name))
 
 
 
