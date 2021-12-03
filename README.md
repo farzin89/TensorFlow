@@ -117,4 +117,4 @@ since we are working on a regression , two of the mainn metrics :
  ((insurance is our dataset name))
 
 
-
+### sklearn.model_selection.train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
