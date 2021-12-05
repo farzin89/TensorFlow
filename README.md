@@ -130,5 +130,5 @@ insurance = pd.read_csv("https://raw.githubusercontent.com/stedy/Machine-Learnin
 
 #### **Question:** How long should you train for?
 
-# #### it depends. Really ... it depends on the problem you are working on . However , many poeple have asked this question before... so TensorFlow has a solution ! It's called "the EarlyStopping Callback"[ https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/EarlyStopping ] , which is a tensorFlow component you can add to your model to stop training once it stops improving a certain metric .
+##### it depends. Really ... it depends on the problem you are working on . However , many poeple have asked this question before... so TensorFlow has a solution ! It's called "the EarlyStopping Callback"[ https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/EarlyStopping ] , which is a tensorFlow component you can add to your model to stop training once it stops improving a certain metric .
 
