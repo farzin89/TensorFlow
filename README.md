@@ -118,3 +118,17 @@ since we are working on a regression , two of the mainn metrics :
 
 
 ### sklearn.model_selection.train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+
+##### read in the insurance dataset 
+
+insurance = pd.read_csv("https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv")
+
+#### To (try) improve our model, we'll run 2 experiments:   
+#### 1. add an extra layer with more hidden units
+#### 2. Train for longer 
+#### 3. (insert your own experiment here)
+
+#### **Question:** How long should you train for?
+
+# #### it depends. Really ... it depends on the problem you are working on . However , many poeple have asked this question before... so TensorFlow has a solution ! It's called "the EarlyStopping Callback"[ https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/EarlyStopping ] , which is a tensorFlow component you can add to your model to stop training once it stops improving a certain metric .
+
