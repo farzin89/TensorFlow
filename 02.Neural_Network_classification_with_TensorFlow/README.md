@@ -53,5 +53,10 @@
 
  #### let's create a teraining and test set.
 
+"""### Note : For many problems, the loss function going down means the model is improving ( the prediction it's making are getting ground truth labels).
+## Finfing the best learning rate 
+ ### 1. A learning rate "Callback" - you can think of a callback as an extra piece of funtionality , you can add to your while it's training.
+ ### 2. Another model (we could use the same one as above, but we're practicing building models here) 
+ ### 3. a modified loss curves plot.
 
 
