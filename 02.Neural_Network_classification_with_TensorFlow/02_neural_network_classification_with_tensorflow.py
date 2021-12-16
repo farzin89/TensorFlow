@@ -639,6 +639,7 @@ y_preds[:10]
 
 tf.round(y_preds)[:10]
 
+
 # Create a confusion matrix
 confusion_matrix(y_test, tf.round(y_preds))
 
@@ -663,6 +664,67 @@ n_classes = cm.shape[0]
 # Let's prettify it
 fig, ax = plt.subplots(figsize=figsize)
 # Create a matrix plot
+cax = ax.matshow(cm, cmap=plt.cm.Blues)
+fig.colorbar(cax)
+classes = False
+
+if classes:
+    labels = classes
+else:
+    labels = np.arange(cm.shape[0])
+# Label the axes
+ax.set(title="confusion Matrix",
+       xlabel="predicted Label",
+       ylabel="True Label",
+       xticks=np.arange(n_classes),
+       yticks=np.arange(n_classes),
+       xticklabels=labels,
+       yticklabels=labels)
+# Set x-axis labels to bottom
+ax.xaxis.set_label_position("bottom")
+ax.xaxis.tick_bottom()
+# Adjust label size
+ax.yaxis.label.set_size(20)
+ax.xaxis.label.set_size(20)
+ax.title.set_size(20)
+
+# Set threshold for different colors
+threshold = (cm.max() + cm.min()) / 2.
+# plot the text on each cell
+for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+    plt.text(j, i, f"{cm[i, j]} ({cm_norm[i, j] * 100:.1f}%)",
+             horizontalalignment="center",
+             color="white" if cm[i, j] > threshold else "black",
+             size=15)
 
 cm.shape[0]
 
+"""# Working with a larger example (multiclass classification)
+
+### When you have more than two classes as an option, it's known as "multi-class classification".
+### This means if you have 3 different classes, it's multi-class classification.
+### It also means if you have 100 different classes,it's multi-class classification.
+
+### To practice multi-class classification, we're going to build a neural network to classify images of different items of clothing.
+"""
+
+import tensorflow as tf
+from tensorflow.keras.datasets import fashion_mnist
+
+# the data has already been sorted into training and test sets for us
+(train_data, train_labels), (test_data, test_labels) = fashion_mnist.load_data()
+
+# show the first training example
+print(f"Training sample:\n{train_data[0]}\n")
+print(f"Training label:\n{train_data[0]}\n")
+
+# check the shape of a single example
+train_data[0].shape, train_labels[0].shape
+
+# plot a single sample
+import matplotlib.pyplot as plt
+
+plt.imshow(train_data[7])
+
+# check out samples label
+train_labels[7]
