@@ -728,3 +728,39 @@ plt.imshow(train_data[7])
 
 # check out samples label
 train_labels[7]
+
+# Create a small list so we can index onto our training labels so they're human-readable
+
+class_names = ["T-shirt/top","Trouser","Pullover","Dress","Coat","Sandal","shirt","sneaker","Bag","Ankle boot"]
+len(class_names)
+
+# plot an example image and its label
+index_of_choice = 2000
+plt.imshow(train_data[index_of_choice],cmap=plt.cm.binary)
+plt.title(class_names[train_labels[index_of_choice]])
+
+# plot multiple random images of fashion MNIST
+import random
+plt.figure(figsize= (7,7))
+for i in range(4):
+  ax = plt.subplot(2,2,i+1)
+  rand_index = random.choice(range(len(train_data)))
+  plt.imshow(train_data[rand_index], cmap= plt.cm.binary)
+  plt.title(class_names[train_labels[rand_index]])
+  plt.axis(False)
+
+"""##Building a multi-class classification model 
+
+### For our multi-class classification model, we can use a similar architecture to our binary classifiers, however, we're going to have to tweak a few things:
+
+#### Input shape = 28*28(the shape of one image)
+#### Output shape = 10 (one per class of clothing)
+#### Loss function = tf.keras.losses.CategoricalCrosstentropy()
+#### Output layer activation = Softmax (not sigmoid)
+"""
+
+# set random seed
+tf.random.set_seed(42)
+
+# Create the model
+model_11 = tf.keras.Sequential
