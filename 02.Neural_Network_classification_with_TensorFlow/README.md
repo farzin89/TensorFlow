@@ -59,4 +59,30 @@
  ### 2. Another model (we could use the same one as above, but we're practicing building models here) 
  ### 3. a modified loss curves plot.
 
+## More classification evaluation methods
 
+### Alongside visualizing our models results as much as possible , there are a handful of other classification evaluation methods & metrics you should be familiar with:
+
+### Accuracy 
+### precision 
+### Recall
+### F1-score
+### Confusion matrix 
+### Classification report(from sckit-learn) - https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+
+# Working with a larger example (multiclass classification)
+
+### When you have more than two classes as an option, it's known as "multi-class classification".
+### This means if you have 3 different classes, it's multi-class classification.
+### It also means if you have 100 different classes,it's multi-class classification.
+
+### To practice multi-class classification, we're going to build a neural network to classify images of different items of clothing.
+
+##Building a multi-class classification model 
+
+### For our multi-class classification model, we can use a similar architecture to our binary classifiers, however, we're going to have to tweak a few things:
+
+#### Input shape = 28*28(the shape of one image)
+#### Output shape = 10 (one per class of clothing)
+#### Loss function = tf.keras.losses.CategoricalCrosstentropy()
+#### Output layer activation = Softmax (not sigmoid)
