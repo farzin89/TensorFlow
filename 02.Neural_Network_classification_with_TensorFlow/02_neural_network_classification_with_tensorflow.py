@@ -756,11 +756,177 @@ for i in range(4):
 #### Input shape = 28*28(the shape of one image)
 #### Output shape = 10 (one per class of clothing)
 #### Loss function = tf.keras.losses.CategoricalCrosstentropy()
+### if your labels are one-hot encoded, use CategoricalCrosstentropy()
+### and if tour labels are integer form use SparseCategoricalCrosstentropy()
 #### Output layer activation = Softmax (not sigmoid)
 """
 
-# set random seed
+# our data needs to be flattened (from 28*28 to None, 784)
+flatten_model = tf.keras.Sequential([tf.keras.layers.Flatten(input_shape=(28,28))])
+flatten_model.output_shape
+
+28*28
+
+tf.one_hot(train_labels[:10],depth=10)
+
+# Set random seed
 tf.random.set_seed(42)
 
 # Create the model
-model_11 = tf.keras.Sequential
+model_11 = tf.keras.Sequential([
+  tf.keras.layers.Flatten(input_shape=(28, 28)), # input layer (we had to reshape 28x28 to 784, the Flatten layer does this for us)
+  tf.keras.layers.Dense(4, activation="relu"),
+  tf.keras.layers.Dense(4, activation="relu"),
+  tf.keras.layers.Dense(10, activation="softmax") # output shape is 10, activation is softmax
+])
+
+# Compile the model
+model_11.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), # different loss function for multiclass classifcation
+                 optimizer=tf.keras.optimizers.Adam(),
+                 metrics=["accuracy"])
+
+# Fit the model
+non_norm_history = model_11.fit(train_data,
+                                train_labels,
+                                epochs=10,
+                                validation_data=(test_data, test_labels)) # see how the model performs on the test set during training
+
+"""####Alright, our model gets to about ~35% accuracy after 10 epochs using a similar style model to what we used on our binary classification problem.
+
+####Which is better than guessing (guessing with 10 classes would result in about 10% accuracy) but we can do better.
+
+####Do you remember when we talked about neural networks preferring numbers between 0 and 1? (if not, treat this as a reminder)
+
+####Well, right now, the data we have isn't between 0 and 1, in other words, it's not normalized (hence why we used the non_norm_history variable when calling fit()). It's pixel values are between 0 and 255.
+"""
+
+train_data.min(),train_data.max()
+
+"""####We can get these values between 0 and 1 by dividing the entire array by the maximum: 255.0 (dividing by a float also converts to a float).
+
+####Doing so will result in all of our data being between 0 and 1 (known as scaling or normalization).
+"""
+
+# Divide train and test images by the maximum value (normalize it)
+train_data = train_data / 255.0
+test_data = test_data / 255.0
+
+# Check the min and max values of the training data
+train_data.min(), train_data.max()
+
+"""####Beautiful! Now our data is between 0 and 1. Let's see what happens when we model it.
+
+####We'll use the same model as before (model_11) except this time the data will be normalized.
+"""
+
+from matplotlib.cbook import flatten
+# set the model
+tf.random.set_seed(42)
+
+# create the model
+
+model_12 = tf.keras.Sequential([
+                                tf.keras.layers.Flatten(input_shape=(28,28)), # input layers (we had to reshape 28*28 to 784)
+                                tf.keras.layers.Dense(4,activation= "relu"),
+                                tf.keras.layers.Dense(4,activation= "relu"),
+                                tf.keras.layers.Dense(10,activation="softmax") # output shape is 10 , activation is softmax
+])
+
+# 2 compile the model
+model_12.compile(loss= tf.keras.losses.SparseCategoricalCrossentropy(),
+             optimizer = tf.keras.optimizers.Adam(),
+             metrics=["accuracy"])
+
+# 3 fit the model
+
+norm_history = model_12.fit(train_data,
+                            train_labels,
+                            epochs = 10,
+                            validation_data = (test_data,test_labels))
+
+"""####Woah, we used the exact same model as before but we with normalized data we're now seeing a much higher accuracy value!
+
+####Let's plot each model's history (their loss curves).
+"""
+
+import pandas as pd
+# plot non-normalized data loss curves
+pd.DataFrame(non_norm_history.history).plot(title="Non-normalized Data")
+# plot normalized data loss curves
+pd.DataFrame(norm_history.history).plot(title = "Normalized data")
+
+"""#####Wow. From these two plots, we can see how much quicker our model with the normalized data (model_12) improved than the model with the non-normalized data (model_11).
+
+#####🔑 Note: The same model with even slightly different data can produce dramatically different results. So when you're comparing models, it's important to make sure you're comparing them on the same criteria (e.g. same architecture but different data or same data but different architecture).
+
+#####How about we find the ideal learning rate and see what happens?
+
+We'll use the same architecture we've been using.
+
+### Finding the ideal learning rate
+"""
+
+# set the mode
+tf.random.set_seed(42)
+
+# 1. create the model
+
+model_13 = tf.keras.Sequential([
+                                tf.keras.layers.Flatten(input_shape = (28,28)),
+                                tf.keras.layers.Dense(4,activation="relu"),
+                                tf.keras.layers.Dense(4,activation="relu"),
+                                tf.keras.layers.Dense(10,activation="softmax")
+])
+
+# 2. compile the model
+
+model_13.compile(loss = tf.keras.losses.CategoricalCrossentropy(),
+                 optimizer = tf.keras.optimizers.Adam(),
+                 metrics = ["accuracy"])
+
+# Create the learning rate callback
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch:1e-3*10**(epoch/20))
+# 4. fit the mosel
+
+norm_history = model_12.fit(train_data,
+                            train_labels,
+                            epochs = 40,
+                            validation_data = (test_data,test_labels),
+                            callbacks =[lr_scheduler])
+
+# Plot the learning rate decay curve
+import numpy as np
+import matplotlib.pyplot as plt
+lrs = 1e-3 * (10**(np.arange(40)/20))
+plt.semilogx(lrs, find_lr_history.history["loss"]) # want the x-axis to be log-scale
+plt.xlabel("Learning rate")
+plt.ylabel("Loss")
+plt.title("Finding the ideal learning rate");
+
+# let's refit a model with the ideal learning rate
+
+# Set random seed
+
+tf.random.set_seed(42)
+
+# 1 create the model
+
+model_14 = tf.keras.Sequential([
+                                tf.keras.layers.Flatten(input_shape = (28,28)),
+                                tf.keras.layers.Dense(4,activation="relu"),
+                                tf.keras.layers.Dense(4,activation="relu"),
+                                tf.keras.layers.Dense(10,activation= "softmax")
+])
+
+# 2 compile the model
+
+model_14. compile(loss = tf.keras.losses.SparseCategoricalCrossentropy(),
+                  optimizer = tf.keras.optimizers.Adam(lr=0.001),
+                  metrics = ["accuracy"])
+
+# 3. fit the model
+
+history_14 = model_14.fit(train_data_norm,train_labels,
+            epochs = 20,
+            validation_data = (test_data_norm,test_labels)
+            )
