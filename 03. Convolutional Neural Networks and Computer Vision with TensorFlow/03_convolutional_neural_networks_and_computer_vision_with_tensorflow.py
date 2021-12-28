@@ -87,9 +87,110 @@ def view_random_image(target_dir,target_class):
 
   print(f"Image shape: {img.shape}") # show the shape of the image
 
-  return img
 
-# View a random image from the training dataset 
+return img
+
+# View a random image from the training dataset
 
 img = view_random_image(target_dir="pizza_steak/train/",
-                        target_class="steak")
+                        target_class="pizza")
+
+# The images we've imported and plotted are actually gaint arrays/tensors of different pixel values
+
+import tensorflow as tf
+
+tf.constant(img)
+
+# View the image shape
+img.shape  # Returns width, height, colour channels
+
+"""## Note : As we've discussed before, many machine learning models, including neural networks prefer the values they work with to be between 0 and 1. knowing this , one of the most common preprocessing steps for working with images is to scale (also referred to as normalize) their pixel values by dividing the image array by 255.(since 255 is the maximum pixel value)."""
+
+# Get all the pixel values between 0 & 1
+
+img / 255
+
+"""## An end-to-end example
+
+### Let's build a convolutional neural network to find patterns in our images, more specifically we a need way t:  
+
+#### - Load our images 
+#### - Preprocess our images 
+#### - Build a CNN to find patterns in our images 
+#### - Compile our CNN 
+#### - Fit the CNN to our training data 
+
+
+
+"""
+
+from tensorflow.python.keras.backend import binary_crossentropy
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# set the seed
+
+tf.random.set_seed(42)
+
+# Preprocess data (get all of pixel values between 0 & 1 , also called scaling/normalization)
+
+train_datagen = ImageDataGenerator(rescale=1. / 255)
+valid_datagen = ImageDataGenerator(rescale=1. / 255)
+
+# Setup paths to our data directories
+train_dir = "/content/pizza_steak/train"
+test_dir = "pizza_steak/test"
+
+# Import data from directories and turn it into batches
+
+train_data = train_datagen.flow_from_directory(directory=train_dir,
+                                               batch_size=32,
+                                               target_size=(224, 224),
+                                               class_mode="binary",
+                                               seed=42)
+valid_data = train_datagen.flow_from_directory(directory=test_dir,
+                                               batch_size=32,
+                                               target_size=(224, 224),
+                                               class_mode="binary",
+                                               seed=42)
+
+# Build a CNN model (same as the tiny VGG on the CNN explainer Website)
+
+model_1 = tf.keras.models.Sequential([
+  tf.keras.layers.Conv2D(filters=10,
+                         kernel_size=3,
+                         activation="relu",
+                         input_shape=(224, 224, 3)),
+
+  tf.keras.layers.Conv2D(10, 3, activation="relu"),
+  tf.keras.layers.MaxPool2D(pool_size=2,
+                            padding="valid"),
+  tf.keras.layers.Conv2D(10, 3, activation="relu"),
+  tf.keras.layers.MaxPool2D(2),
+  tf.keras.layers.Flatten(),
+  tf.keras.layers.Dense(1, activation="sigmoid")
+
+])
+
+# Compile our CNN
+model_1.compile(loss="binary_crossentropy",
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=["accuracy"]
+                )
+# fit the model
+
+history_1 = model_1.fit(train_data,
+                        epochs=5,
+                        steps_per_epoch=len(train_data),
+                        validation_data=valid_data,
+                        validation_steps=len(valid_data))
+
+"""### Note : If the above cell is talking longer than 10 seconds per epoch, make sure you're using a GPU by going to Runtime-> Change Runtime Type-> Hardware Acccelator -> GPU(you may have to rerun some cell above)"""
+
+# Get a model summary
+
+model_1.summary()
+
+"""
+### Practice/exercise: Go through the CNN explainer website for a minimum of 10-minute and compare our neural network with thiers : https://poloclub.github.io/cnn-explainer/"""
+
