@@ -194,3 +194,129 @@ model_1.summary()
 """
 ### Practice/exercise: Go through the CNN explainer website for a minimum of 10-minute and compare our neural network with thiers : https://poloclub.github.io/cnn-explainer/"""
 
+## Using the same model as before
+
+### Let's replicate the model we've built in a previous section to see if it works with our image data.
+
+### the model vwe're building is from the [Tensorflow playground](https://playground.tensorflow.org/#activation=tanh&batchSize=10&dataset=circle&regDataset=reg-plane&learningRate=0.03&regularizationRate=0&noise=0&networkShape=4,2&seed=0.69596&showTestData=false&discretize=false&percTrainData=50&x=true&y=true&xTimesY=false&xSquared=false&ySquared=false&cosX=false&sinX=false&cosY=false&sinY=false&collectStats=false&problem=classification&initZero=false&hideText=false).
+"""
+
+# Set Random seed 
+
+tf.random.set_seed(42)
+
+# Creeate a model to replicate the Tensorflow playground model 
+
+model_2 = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(224,224,3)),
+    tf.keras.layers.Dense(4,activation="relu"),
+    tf.keras.layers.Dense(4,activation="relu"),
+    tf.keras.layers.Dense(1,activation="sigmoid")
+])
+
+# compile the model 
+
+model_2.compile(loss="binary_crossentropy",
+                optimizer= tf.keras.optimizers.Adam(),
+                metrics = ["accuracy"])
+# Fit the model
+history_2= model_2.fit(train_data,
+                       epochs=5,
+                       steps_per_epoch= len(train_data),
+                       validation_data= valid_data,
+                       validation_steps = len(valid_data))
+
+# Get a summary of model_2
+model_2.summary()
+
+"""### Despite having 20x more parameters than our CNN (model_1),model_2 performs terribly... let's try to improve it.
+
+"""
+
+# set the random seed
+tf.random.set_seed(42)
+
+# create the model (same as above let's step it up notch)
+model_3 = tf.keras.Sequential([
+   tf.keras.layers.Flatten(input_shape=(224,224,3)),
+   tf.keras.layers.Dense(100,activation="relu"),
+   tf.keras.layers.Dense(100,activation="relu"),
+   tf.keras.layers.Dense(100,activation="relu"),
+   tf.keras.layers.Dense(1,activation="sigmoid")
+])
+
+# Compile the model 
+model_3.compile(loss= "binary_crossentropy",
+                optimizer =tf.keras.optimizers.Adam(),
+                metrics =["accuracy"])
+# Fit the model 
+history_3= model_3.fit(train_data,
+                       epochs=5,
+                       steps_per_epoch= len(train_data),
+                       validation_data= valid_data,
+                       validation_steps = len(valid_data))
+
+# Get the summary of model_3
+model_3.summary()
+
+"""##Note:
+####you can think of trainable parameters as pattern a model can learn from data. intuitively, you might think more is better. and in lots of cases, it is. But in this case, the difference here is the two different styles of model we're using. where a series of dense layers has a number of different learnable parameters connected to each other and hence a higher number of possible learning patterns, a convolutional neural network seeks to sort out and learn the most important patterns in an image. So even though these less learnable parameters in our convolutional neural network, these are often more helpful in dechiphering between different features in an image.
+"""
+
+model_1.summary()
+
+"""### Binary Classification: Let's break it down
+
+#### 1. Become one with the data(visualize,visualize,visualize)
+#### 2. Preprocess the data (prepared it for our model,the main step here was scaling/normalizing)
+#### 3. Created a model (start with a baseline)
+#### 4. fit the model
+#### 5. Evaluate the model
+#### 6. Adjust different parameters and improve the model (try to beat our baseline)
+#### 7. Repeat until satisfied (experiment,experiment,experiment)
+
+## 1. Become one with data
+"""
+
+# Visualize data
+plt.figure()
+plt.subplot(1,2,1)
+steak_img= view_random_image("pizza_steak/train/","steak")
+plt.subplot(1,2,2)
+pizza_img = view_random_image("pizza_steak/train/","pizza")
+
+"""### 2. Preprocess the data (prepare it for a model)
+
+"""
+
+# Define directory dataset paths 
+train_dir= "pizza_steak/train/"
+test_dir = "pizza_steak/test/"
+
+"""### Our next step is to turn our date into "batches"
+
+#### A Batch is a small subset of data. Rather than look at all 10,000 images, a model might only look at 32 at a time.
+
+#### It does this for a couple of reasons:
+##### 1. 10,000 images(or more) might not fit into the memory of your processor(GPU)
+#### 2. Trying to learn the patterns in 10,000 images in one hit could result in the model not being able to learn very well
+
+### why 32?
+#### Because 32 is good for your health ...
+"""
+
+# Create train and test generators and rescale the data
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+train_datagen = ImageDataGenerator(rescale=1/255.)
+test_datagen = ImageDataGenerator(rescale=1/255.)
+
+# Load in our image data from directories and turn them into batches 
+train_data = train_datagen.flow_from_directory(directory=train_dir,
+                                               target_size=(224,224),
+                                               class_mode="binary",
+                                               bath_size=32)
+test_data = test_datagen.flow_from_directory(directory=train_dir,
+                                             target_size=(224,224),
+                                             class_mode= "binary",
+
