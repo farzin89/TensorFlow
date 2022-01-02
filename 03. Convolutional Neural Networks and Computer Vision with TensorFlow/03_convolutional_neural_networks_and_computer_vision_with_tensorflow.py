@@ -287,13 +287,13 @@ pizza_img = view_random_image("pizza_steak/train/","pizza")
 
 """### 2. Preprocess the data (prepare it for a model)
 
-"""
+
 
 # Define directory dataset paths 
 train_dir= "pizza_steak/train/"
 test_dir = "pizza_steak/test/"
 
-"""### Our next step is to turn our date into "batches"
+### Our next step is to turn our date into "batches"
 
 #### A Batch is a small subset of data. Rather than look at all 10,000 images, a model might only look at 32 at a time.
 
@@ -303,7 +303,7 @@ test_dir = "pizza_steak/test/"
 
 ### why 32?
 #### Because 32 is good for your health ...
-"""
+
 
 # Create train and test generators and rescale the data
 
@@ -311,7 +311,8 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 train_datagen = ImageDataGenerator(rescale=1/255.)
 test_datagen = ImageDataGenerator(rescale=1/255.)
 
-# Load in our image data from directories and turn them into batches 
+# Load in our image data from directories and turn them into batches
+
 train_data = train_datagen.flow_from_directory(directory=train_dir,
                                                target_size=(224,224),
                                                class_mode="binary",
@@ -319,4 +320,82 @@ train_data = train_datagen.flow_from_directory(directory=train_dir,
 test_data = test_datagen.flow_from_directory(directory=train_dir,
                                              target_size=(224,224),
                                              class_mode= "binary",
+                                             batch_size=32)
+
+# Get a sample of a train data batch
+images,labels = train_data.next() # get the "next" batch of images/labels in train_data
+len(images),len(labels)
+
+# How many batches are there?
+len(train_data)
+
+images[:2], images[0].shape
+
+# View the first batch of labels
+labels
+
+"""### 3. create a CNN model (start with a baseline)
+
+A baseline is a relatively simple model or existing result that you setup when beginning a machine learning experiment and then as you keep experimenting, you try to beat the baseline.
+
+## Note : In deep learning , there is almost an infinite amount of architectures you could create. So one the best ways to get started is  to start with something simple and see if it works on your data and then introduce complexity as required(e.g look at which current model is performing best in the field for your problem).
+"""
+
+# Make the creating of our model a little easier
+
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Dense,Flatten,Conv2D,MaxPool2D,Activation
+from tensorflow.keras import Sequential
+
+# Create the model(this will be our baseline,a layer convolutional neural network )
+model_4 = Sequential([
+     Conv2D(filters=10, # filter is the number of sliding windows going across an input(higher=more complex model)
+            kernel_size=(3,3), # the size of the sliding window going across an input
+            strides=(1,1), # the size of the step the sliding window takes across an input # by difult is 1
+            padding="valid", # by difult is valid # if "same",output is same as input shape,if "valid",output shape gets compressed
+            activation="relu",
+            input_shape = (224,224,3)), # input layer (specify input shape)
+    Conv2D(10,3,activation="relu"),
+    Conv2D(10,3,activation="relu"),
+    Flatten(),
+    Dense(1,activation="sigmoid") # output layer (working with binary classification so only 1 output neuron)
+])
+
+"""### practice: 
+#### understand what's going on in a Conv2D layers by going through the CNN explainer website for 10-20 minutes: https://poloclub.github.io/cnn-explainer/#:~:text=CNN%20Explainer%20was%20created%20by%20Jay%20Wang%20%2C,research%20collaboration%20between%20Georgia%20Tech%20and%20Oregon%20State.
+"""
+
+from tensorflow.keras import optimizers
+# compile the model
+model_4.compile(loss="binary_crossentropy",
+                optimizer=Adam(),
+                metrics=["accuracy"])
+
+"""### Fit the model 
+
+"""
+
+# Check the lengths of training and test data generators
+len(train_data), len(test_data)
+
+# Fit the model
+history_4= model_4.fit(train_data, # this is a combination of labels and sample data
+                       epochs=5,
+                       steps_per_epoch=len(train_data),
+                       validation_data= test_data,
+                       validation_steps=len(test_data))
+
+model_1.evaluate(test_data)
+
+model_1.summary()
+
+"""### 5. Evaluating our model 
+
+#### it looks like our model is learning something, let's evaluate it.
+"""
+
+import pandas as pd
+pd.DataFrame(history_4.history).plot(figsize=(10,7))
+
+
 
