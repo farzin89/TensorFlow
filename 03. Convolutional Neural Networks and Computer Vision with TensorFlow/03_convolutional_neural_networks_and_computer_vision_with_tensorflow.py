@@ -396,6 +396,126 @@ model_1.summary()
 
 import pandas as pd
 pd.DataFrame(history_4.history).plot(figsize=(10,7))
+from tensorflow.python.keras.metrics import accuracy
+# Plot the validation and training curves separately
+def plot_loss_curves(history):
+   """
+   Returns separate loss curves for training and validation metrics."""
+   loss = history.history["loss"]
+   val_loss= history.history["val_loss"]
+
+   accuracy= history.history["accuracy"]
+   val_accuracy = history.history["val_accuracy"]
+
+   epochs= range(len(history.history["loss"])) # how many epochs did we run for?
+
+   # Plot loss
+   plt.plot(epochs,loss,label="training_loss")
+   plt.plot(epochs,val_loss, label="val_loss")
+   plt.title("loss")
+   plt.xlabel("epochs")
+   plt.legend()
+
+  # plot the accuracy
+   plt.figure()
+   plt.plot(epochs,accuracy,label="training_accuracy")
+   plt.plot(epochs,val_accuracy, label="val_accuracy")
+   plt.title("accuracy")
+   plt.xlabel("epochs")
+   plt.legend()
+
+"""### Note:
+#### When a model's validation loss starts to increase ,it's likely that the model is overfitting the training dataset. This means, it's learning the patterns in the traning dataset too well and thus the model's ability to generalize to unseen data will be diminished.
+"""
+
+# Chech out the loss and accuracy of model_4
+plot_loss_curves(history_4)
+
+"""### Note:
+
+#### idealy the two loss curves(training and validation) will be very similar to each other (training loss and validation loss decreasing at similar rates),when there are large differences your model may be overfiting.
+
+### 6. Adjust the model parameters 
+#### Fiting a machine learning model comes in 3 steps:
+
+##### 0. Create a baseline 
+##### 1. Beat the baseline by overfitting a larger model
+##### 2. Reduce overfiting 
+
+### ways to induce overfitting:
+
+#### * Increase the number of conv layers
+#### * Increase the number of conv filters 
+#### * Add another dense layers to the output of our flattened layer
+
+### Reduce overfitting:
+
+#### * Add data augmentation
+#### * Add regularization layers(such as Maxpool2D)
+#### * Add more data...
+
+### Note :   
+
+#### Reducing overfitting is also known as regularization.
+"""
+
+# Create the model (this is going to be our new baseline)
+
+model_5 = Sequential([
+     Conv2D(10,3,activation="relu",input_shape = (224,224,3)),
+     MaxPool2D(pool_size=2),
+     Conv2D(10,3,activation="relu"),
+     MaxPool2D(),
+     Conv2D(10,3,activation="relu"),
+     MaxPool2D(),
+     Flatten(),
+     Dense(1,activation="sigmoid")
+])
+
+# Compile the model
+model_5.compile(loss= "binary_crossentropy",
+                optimizer = Adam(),
+                metrics = ["accuracy"])
+
+# Fit the model
+history_5 = model_5.fit(train_data,
+                        epochs= 5,
+                        steps_per_epoch = len(train_data),
+                        validation_data = test_data,
+                        validation_steps= len(valid_data))
+
+# Get a summary of our model with max pooling
+model_5.summary()
+
+model_4.summary()
+
+# plot loss curves
+plot_loss_curves(history_5)
+
+"""### opening our bag of tricks and finding data augmentation"""
+
+from keras_preprocessing.image import image_data_generator
+# Create ImageDataGenerator training instance with data augmentation
+train_datagen_augmented = ImageDataGenerator(rescale=1/255.,
+                                             rotation_range=0.2,
+                                             shear_range=0.2,
+                                             zoom_range=0.2,
+                                             width_shift_range=0.2,
+                                             height_shift_range=0.3,
+                                             horizontal_flip=True)
+# Create ImageGenerator without data augmentation
+train_datagen = ImageDataGenerator(rescale=1/255.)
+
+# Create ImageDataGenerator without data augmentation for the test dataset
+test_datagen = ImageDataGenerator(rescale=1/255.)
+
+"""### Question : 
+
+#### what is data augmentation?
+#### Data augmentation is the process of altering our traning data,leading it to have more diversity and in turn allowing our models to learn more generalizable(hopefully) patterns. Altering might mean adjusting the rotation of an image,flipping it,cropping it or something similar.
+
+### Let's write some code to visualize data augmentation...
+"""
 
 
 
