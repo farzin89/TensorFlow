@@ -517,5 +517,116 @@ test_datagen = ImageDataGenerator(rescale=1/255.)
 ### Let's write some code to visualize data augmentation...
 """
 
+# import data and augment it from training directory
+print("Augmented training data")
+train_data_augmented = train_datagen_augmented.flow_from_directory(train_dir,
+                                                                   target_size=(224,224),
+                                                                   batch_size=32,
+                                                                   class_mode="binary",
+                                                                   shuffle=False) # for demonstration purposes only
+
+# Create non_augmented train data batches
+print("Non-augmented training data:")
+train_data = train_datagen.flow_from_directory(train_dir,
+                                               target_size=(224,224),
+                                               batch_size=3,
+                                               class_mode="binary",
+                                               shuffle=False)
+IMG_SIZE =(224,224)
+# Create non-augmentet test data batches
+print("Non_augmented test data:")
+test_data = test_datagen.flow_from_directory(test_dir,
+                                             target_size=IMG_SIZE,
+                                             batch_size=32,
+                                             class_mode="binary")
+
+"""###Note:
+#### Data augmentation is usually only performed on the training data.using 'ImageDataGenerator' built-in data augmentation parameters our images are left as they are in the directories but are modigied as they're loaded into the model.
+
+#### Finaly let's visualize some augmented data!!!
+
+"""
+
+# Get sample data batches
+
+images,labels = train_data.next()
+augmented_images, augmented_labes= train_data_augmented.next() #note: label aren't augmented... only data(images)
+
+# show original image and augmented image
+import random
+random_number = random.randint(0,32) # our batch size are 32...
+print(f"showing image number:{random_number}")
+plt.imshow(images[random_number])
+plt.title(f"Original image")
+plt.axis(False)
+plt.figure()
+plt.imshow(augmented_images[random_number])
+plt.title(f"Augmented image")
+plt.axis(False)
+
+"""#### Now we've seen what augmented training data looks like,let's build a model and see how it learns on augmented data.
+
+"""
+
+# Create a model (same as model_5)
+model_6 =Sequential([
+    Conv2D(10,3,activation="relu"),
+    MaxPool2D(pool_size=2),
+    Conv2D(10,3,activation="relu"),
+    MaxPool2D(),
+    Conv2D(10,3,activation= "relu"),
+    MaxPool2D(),
+    Flatten(),
+    Dense(1,activation="sigmoid")
+])
+
+# compile the model
+
+model_6.compile(loss= "binary_crossentropy",
+                optimizer = Adam(),
+                metrics = ["accuracy"])
+
+# Fit the model
+history_6 = model_6.fit(train_data_augmented, # fitting model_6 on augmented training data
+                        epochs = 5,
+                        steps_per_epoch=len(train_data_augmented),
+                        validation_data= test_data,
+                        validation_steps=len(test_data))
+
+plot_loss_curves(history_6)
+
+"""###3 Let's shuffle our augmented training data and train another model (the same as before) on it and see what happens."""
+
+# Import data and augment it and shuffle from training directory
+train_data_augmented_shuffled=train_datagen_augmented.flow_from_directory(train_dir,
+                                                  target_size=(224,224),
+                                                  class_mode="binary",
+                                                  batch_size=32,
+                                                  shuffle = True) # shuffle data this time
+
+# Create the model (same as model_5 and model_6)
+model_7 = Sequential([
+      Conv2D(10,3,activation="relu",input_shape=(224,224,3)),
+      MaxPool2D(),
+      Conv2D(10,3,activation="relu"),
+      MaxPool2D(),
+      Conv2D(10,3,activation="relu"),
+      MaxPool2D(),
+      Flatten(),
+      Dense( 1,activation="sigmoid")
+
+])
+
+# compile the model
+model_7.compile(loss= "binary_crossentropy",
+                optimizer =Adam(),
+                metrics= ["acccuracy"])
+# fit the model
+history_7 = model_7.fit(train_data_augmented_shuffled, # we're fitting on augmented and shuffled data now
+                        epochs = 5,
+                        steps_per_epoch=len(train_data_augmented_shuffled),
+                        validation_data= test_data,
+                        validation_steps=len(test_data))
+
 
 
