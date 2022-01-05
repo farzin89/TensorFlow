@@ -628,5 +628,73 @@ history_7 = model_7.fit(train_data_augmented_shuffled, # we're fitting on augmen
                         validation_data= test_data,
                         validation_steps=len(test_data))
 
+# plot the lost curves
+plot_loss_curves(history_7)
+
+"""### Note:
+#### when shuffling training data,the model gets exposed to all different kinds of data during training,thus enabling it to learn features across a wide array of images(in our case,pizza & steak at the same time instead of just pizza then steak)
+
+### 7. Repeat until satisfied
+
+#### Since we've already beaten our baseline,there are a few things we could try to contine to improve our model:
+
+#### * Increase the number of model layers (e.g. add more 'Conv2D'/MaxPool2D' layers)
+
+#### * Increase the number of filters in each convolutional layer (e.g.from 10 to 32 or even 64)
+
+#### * Train for longer (more epochs)
+#### * Find an ideal learning rate 
+#### * Get more data (give the model more opportunities to learn)
+#### * use " Transfer learning" to leverage what another image model has learn and adjust it for our own use case 
+
+### Practice : Recreate the model on the CNN explainer website(same as model_1) and see how it performs on the augmented shuffled training data.
+
+### Making a prediction with our trained on our own custom data
+"""
+
+# Classes we"re working with
+print(class_names)
+
+# view our example image
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+
+!wget https://raw.githubusercontent.com/mrdbourke/tensorflow-deep-learning/main/images/03-steak.jpeg
+steak =mpimg.imread("03-steak.jpeg")
+plt.imshow(steak)
+plt.axis(False)
+
+# check the shape of our image
+steak.shape
+
+"""### Note: 
+#### when you a train a neural network and you want to make a prediction with it your own custom data, it's important than your custom data(or new data) is preprocessed into the same format as the data your model was trained on.
+
+"""
+
+# create a function to import an image and resize it to be able to used with our model
+
+def load_and_prep_image(filename,img_shape=224):
+  """
+  Reads an image from filename, turns it into a tensor and reshapes it
+   to (img_shape,img_shape,colour_channels).
+  """
+  # Read in the image
+  img = tf.io.read_file(filename)
+  # Decode the read file into a tensor
+  img = tf.image.decode_image(img)
+  # Resize the image
+  img = tf.image.resize(img,size=[img_shape,img_shape])
+  # Rescale the image (get all values between 0 and 1)
+  img = img/255.
+  return img
+
+# Load in and preprocess our custom image
+steak = load_and_prep_image("03-steak.jpeg")
+steak
+
+model_7.predict(tf.expand_dims(steak, axis = 0))
+
+
 
 
