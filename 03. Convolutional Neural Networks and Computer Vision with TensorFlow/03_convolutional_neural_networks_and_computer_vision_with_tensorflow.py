@@ -694,7 +694,122 @@ steak = load_and_prep_image("03-steak.jpeg")
 steak
 
 model_7.predict(tf.expand_dims(steak, axis = 0))
+pred
 
+"""### Looks like our custom image is being put through our model,however, it currently outputs a prediction probability , wouldn't it be nice if we could visualize the image as well as the model's prediction?
+
+"""
+
+# Remind ourselves of our class names
+class_names
+
+# We can index the predicted class by rounding the prediction probability and indexing it on the class names.
+pred_class = class_names[int(tf.round(pred))]
+pred_class
+
+def pred_and_plot(model,filename,class_names=class_names):
+   """
+   Import an image located at filename ,make a prediction with model and
+   plot the image with the predicted class as the title.
+   """
+   # Import the target image and preprocess it
+   img= load_and_prep_image(filename)
+
+   # make a prediction
+   pred = model.predict(tf.expand_dims(img,axis=0))
+
+   # Get the predicted class
+   pred_class = class_names[int(tf.round(pred))]
+
+   # plot the image and predicted class
+   plt.imshow(img)
+   plt.title(f"prediction: {pred_class}")
+   plt.axis(False)
+
+# Test our model on a custom image
+pred_and_plot(model_7,"03-steak.jpeg")
+
+"""### our model works! Let's try it on another image... this time pizza 
+
+
+"""
+
+# download another test custom image and make a prediction on it
+!wget https://raw.githubusercontent.com/mrdbourke/tensorflow-deep-learning/main/images/03-pizza-dad.jpeg
+
+pred_and_plot(model_7,"03-pizza-dad.jpeg")
+
+"""### Multi-class image Classification 
+#### We've just been through a bunch of the following steps with a binary classification problem (pizza vs. steak), now we're going to step things up a notch with 10 classes of food (multi-class classification).
+
+#### 1. Become one with the data
+#### 2. Preprocess the data (get it ready for a model)
+#### 3. Create a model (start with a baseline)
+#### 4. Fit the model (overfit it to make sure it works)
+#### 5. Evaluate the model 
+#### 6. Adjust different hyperparameters and improve the model (try to beat baseline/reduce overfitting)
+#### 7. Repeat until satisfied
+
+## 1. Import and become one with data
+"""
+
+import zipfile
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/10_food_classes_all_data.zip
+
+# Unzip our data
+zip_ref = zipfile.ZipFile("10_food_classes_all_data.zip","r")
+zip_ref.extractall()
+zip_ref.close()
+
+import os
+
+# Walk through 10 classes of food image data
+for dirpath,dirnames,filenames in os.walk("10_food_classes_all_data"):
+  print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
+
+!ls -la 10_food_classes_all_data/
+
+# Setup the train and test directories
+
+train_dir = "10_food_classes_all_data/train/"
+test_dir = "10_food_classes_all_data/test/"
+
+# let's get the class names
+import pathlib
+import numpy as np
+data_dir = pathlib.Path(train_dir)
+class_names = np.array(sorted([item.name for item in data_dir.glob('*')]))
+print(class_names)
+
+# Visualize , visualize , visualize
+
+import random
+img = view_random_image(target_dir= train_dir,
+                        target_class = random.choice(class_names))
+
+"""## 2. Preproces the data (prepare it for a model)"""
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Rescale
+train_datagen = ImageDataGenerator(rescale=1/255.)
+test_datagen = ImageDataGenerator (rescale=1/255.)
+
+# Load data in from directories and turn it into batches
+
+train_data = train_datagen.flow_from_directory(train_dir,
+                                               target_size =(224,244),
+                                               batch_size =32,
+                                               class_mode ="categorical")
+test_data = test_datagen.flow_from_directory(test_dir,
+                                             target_size=(244,244),
+                                             batch_size = 32,
+                                             class_mode ="categorical")
+
+"""### Create a model (start with a baseline)
+
+#### we've been talking a lot about the CNN explainer website... how about we just take their model (also on 10 classes) and use it for our problems..?
+"""
 
 
 
