@@ -811,5 +811,39 @@ test_data = test_datagen.flow_from_directory(test_dir,
 #### we've been talking a lot about the CNN explainer website... how about we just take their model (also on 10 classes) and use it for our problems..?
 """
 
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D,MaxPool2D,Flatten,Dense,Activation
+
+# create our model (very similar to previous models but actually the same as CNN explainer website )
+model_8 = Sequential([
+      Conv2D(10,3,input_shape = (224,224,3)),
+      Activation(activation= "relu"),
+      Conv2D(10,3,activation="relu"),
+      MaxPool2D(),
+      Conv2D(10,3,activation="relu"),
+      Conv2D(10,3,activation= "relu"),
+      MaxPool2D(),
+      Flatten(),
+      Dense(10,activation="softmax") # change to have 10 output neurons and use the softmax activation function
+
+])
+
+# Compile the model
+model_8.compile(loss="categorical_crossentropy",
+                optimizer = tf.keras.optimizers.Adam(),
+                metrics = ["accuracy"])
+
+len(train_data), len(test_data)
+
+history_8 = model_8.fit(train_data, # now 10 different classes
+                        epochs = 5,
+                        steps_per_epoch = len(train_data),
+                        validation_data= test_data,
+                        validation_steps = len(test_data))
+
+import time
+for _ in range(10):
+     time.sleep(300)
 
 
