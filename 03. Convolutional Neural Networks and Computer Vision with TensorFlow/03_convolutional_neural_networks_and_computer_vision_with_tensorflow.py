@@ -842,8 +842,184 @@ history_8 = model_8.fit(train_data, # now 10 different classes
                         validation_data= test_data,
                         validation_steps = len(test_data))
 
-import time
-for _ in range(10):
-     time.sleep(300)
+"""### Evaluate the model"""
 
+# Evaluate on the test data
+
+model_8.evaluate(test_data)
+
+# check out the model's loss curves on the 10 classes
+
+plot_loss_curves(history_8)
+
+"""### What do these loss curves tell us?
+
+#### well... it seems our mosel is overfitting the training set quite badly ... in other words, it's getting great results on the training data but fails to generalize well to unseen data and performs poorly on the dataset.
+
+### 6. Adjust the model hyperparameters(to beat the baseline/reduce overfiting)
+
+#### Due to its performance on the training data, it's clear our model is learning something...
+#### however, it's not generalizing well to unseen data(overfitting).
+
+#### so, let's try and fix overfitting by ...
+
+##### 1. Get more data : Having more data gives a model more opportunity to learn diverse patterns...
+##### 2. simpliy the model : if our current model is overfitting the data, it may be too complicated of a model , one way to simplify a model is to : reduce of layers or reduce hidden units in layers
+##### 3. use data augmentation : data augmentation manipulates the training data in such a way to add more diversity to it( without altering the original data)
+##### 4. Use transfer learning : transfer learning leverages the patterns another model has learned on similar data to your own and allows you to use those patterns on your own dataset
+"""
+
+# How about we try and simplify the model first?
+# Let's try to remove 2 convolution layers...
+
+model_9 = Sequential([
+    Conv2D(10, 3, activation="relu", input_shape=(224, 224, 3)),
+    MaxPool2D(),
+    Conv2D(10, 3, activation="relu"),
+    MaxPool2D(),
+    Flatten(),
+    Dense(10, activation="softmax")
+])
+
+model_9.compile(loss="categorical_crossentropy",
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=["accuracy"])
+
+# Fit the model with 2x conv layers removed
+
+history_9 = model_9.fit(train_data,
+                        epochs=5,
+                        steps_per_epoch=len(train_data),
+                        validation_data=test_data,
+                        validation_steps=len(test_data))
+
+plot_loss_curves(history_9)
+
+"""#### Look  loke our "simplifying the model" experiment didn't work...the accuracy went down and overfitting continued....
+
+#### How about we try data augmentation??
+
+### Trying to reduce overfitting with data augmentation
+
+#### Let's try and improve our model's results by using augmented training data...
+### ideally,we want to: 
+
+####- Reduce overfitting (get the train and validation loss curves closer)
+
+#### Improve validation accurcy
+"""
+
+# Create an augmented data generator instance
+
+train_datagen_augmented = ImageDataGenerator(rescale=1 / 255.,
+                                             rotation_range=0.2,
+                                             width_shift_range=0.2,
+                                             height_shift_range=0.2,
+                                             zoom_range=0.2,
+                                             horizontal_flip=True)
+
+train_datagen_augmented = train_datagen_augmented.flow_from_directory(train_dir,
+                                                                      target_size=(224, 224),
+                                                                      batch_size=32,
+                                                                      class_mode="categorical")
+
+# Let's create another model but this time we'll fit it on the augmented training data of 10 classes.
+model_10 = tf.keras.models.clone_model(model_8)
+
+# compile the cloned model(using the same setup as previous models)
+model_10.compile(loss="categorical_crossentropy",
+                 optimizer=tf.keras.optimizers.Adam(),
+                 metrics=["accuracy"])
+
+# Fit the model
+history_10 = model_10.fit(train_datagen_augmented,
+                          epochs=5,
+                          steps_per_epoch=len(train_datagen_augmented),
+                          validation_data=test_data,
+                          validation_steps=len(test_data))
+
+"""#### That looks much better, the loss curves are much closer to each other than the baseline model and they look like they're heading in the right direction (certainly not the wrong direction) so if we were to train for longer , we might see further improvements.
+
+### 7. Repeat until satisfied 
+
+#### we could keep going here ... continally trying to bring our loss curves closer together and trying to improve the validation/test accuracy.
+
+#### how?
+
+#### By running lots of experiements, namely :  
+
+#### - restructuring our model's architecture (increasing layers/hidden units)
+
+#### - adjust the learning rate 
+
+#### - try different methods of data augmentation( adjust the hyperparameters in our ImageDataGenerator instance)
+
+#### - training for longer (e.g 10 epochs instead of 5 epochs)
+#### - try transfer learning
+
+### Making a prediction with our trained model 
+
+#### Let's use our trained model to make some predictions on our own custom imaged!
+"""
+
+# Remind ourselves of the classes our model is trained on
+class_names
+
+# Download some custom images
+!wget
+https: // raw.githubusercontent.com / mrdbourke / tensorflow - deep - learning / main / images / 03 - pizza - dad.jpeg
+!wget
+https: // raw.githubusercontent.com / mrdbourke / tensorflow - deep - learning / main / images / 03 - hamburger.jpeg
+!wget
+https: // raw.githubusercontent.com / mrdbourke / tensorflow - deep - learning / main / images / 03 - sushi.jpeg
+!wget
+https: // raw.githubusercontent.com / mrdbourke / tensorflow - deep - learning / main / images / 03 - steak.jpeg
+
+
+# Reconfig pred_and_plot function to work with multi-class images
+
+def pred_and_plot(model, filename, class_names=class_names):
+    """
+    Import an image located at filename ,make a prediction with model and
+    plot the image with the predicted class as the title.
+    """
+    # Import the target image and preprocess it
+    img = load_and_prep_image(filename)
+
+    # make a prediction
+    pred = model.predict(tf.expand_dims(img, axis=0))
+
+    # add in logic for multi-class & get pred_class name
+
+    if len(pred[0]) > 1:
+        pred_class = class_names[tf.argmax(pred[0])]
+    else:
+        pred_class = class_names[int(tf.round(pred[0]))]
+
+    # plot the image and predicted class
+    plt.imshow(img)
+    plt.title(f"prediction: {pred_class}")
+    plt.axis(False)
+
+
+# make a prediction using model_10
+pred_and_plot(model=model_10,
+              filename="03-pizza-dad.jpeg",
+              class_names=class_names)
+
+"""### Good news : our updated pred_and_plot function works for binary classification too...
+
+### Looks like our model didn't perform very well on our custom images but this because it only achieved ~39% accuracy on the test data. So we can expect it to function quite poorly on other unseen data.
+
+### Saving and loading our model
+"""
+
+# Save a model
+model_10.save("saves_trained_model_10")
+
+# Load in a trained model and evaluate it
+loaded_model_10 = tf.keras.models.load_model("saves_trained_model_10")
+loaded_model_10.evaluate(test_data)
+
+model_10.evaluate(test_data)
 
