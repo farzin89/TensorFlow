@@ -86,3 +86,70 @@ Callbacks are extra functionality you can add to your models to be performed dur
    print(f"saving TensorBoard log files to : {log_dir}")
    return tensorboard_callback
 
+"""** Note**: you can customize the directory where you TensorBoard logs(model training metrics) get saved to whatever you like. The log_dir parameter we've created above is only one option.
+
+## Creating models using TensorFlow Hub
+
+In the past we've used TensorFlow to create our own models layers by layer from scratch.
+
+Now we're going to do a similar process, except the majority of our model's layers are going to come from TensorFlow Hub.
+
+We can access pretrained models on : https://tfhub.dev/
+
+Browsing the Tensorflow Hub page and sorting for image classification, we found the following feature vector model link : https://tfhub.dev/tensorflow/efficientnet/b0/feature-vector/1
+"""
+
+# Let's compare the following two models
+resnet_url = "https://tfhub.dev/google/imagenet/resnet_v2_50/feature_vector/5"
+efficientnet_url = "https://tfhub.dev/tensorflow/efficientnet/b0/feature-vector/1"
+
+# import depebdencies
+
+import tensorflow as tf
+import tensorflow_hub as hub
+from tensorflow.keras import layers
+
+IMAGE_SHAPE+(3,)
+
+# Let's make a create_model() function to create a model from a URL
+
+def create_model (model_url,num_classes=10):
+  """
+  Takes a TensorFlow Hub URL and creates a keras sequential model with it.
+
+  Args:
+    model_url(str): A TensorFlow Hub feature extraction URL.
+    num_classes (int) : Number of output neurons in the output layer,
+     should be equal to number of target classes,default 10.
+  Return:
+     An uncompliled Keras Sequentioal model with model_url as feature extractor
+     layer and Dense output layer with num_classes output neurons.
+  """
+
+  # download the pretrained model and save it as a keras layer
+  feature_extractor_layer  = hub.KerasLayer(model_url,
+                                            trainable = False, # freeze the already learned patterns
+                                            name = "feature_extraction_layer",
+                                            input_shape = IMAGE_SHAPE+(3,))
+  # Create our own model
+
+  model = tf.keras.Sequential([
+      feature_extractor_layer,
+      layers.Dense(num_classes,activation="softmax",name="output_layer")
+  ])
+
+
+  return model
+
+"""### Creating and Testing ResNet TensorFlow hub Feature Extraction model """
+
+# Create Resent model
+
+resnet_model = create_model(resnet_url,
+                            num_classes = train_data_10_percent.num_classes)
+
+# Compile our resnet model
+resnet_model.compile(loss = "categorical_crossentropy",
+                     optimizer = tf.keras.optimizers.Adam(),
+                     metrics = ["accuracy"])
+
