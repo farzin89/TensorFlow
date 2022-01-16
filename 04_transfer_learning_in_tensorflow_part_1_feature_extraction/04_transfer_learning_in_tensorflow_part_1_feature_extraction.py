@@ -152,4 +152,63 @@ resnet_model = create_model(resnet_url,
 resnet_model.compile(loss = "categorical_crossentropy",
                      optimizer = tf.keras.optimizers.Adam(),
                      metrics = ["accuracy"])
+# let's fit our resNet model to the data (10 percent of 10 classes)
+resent_history = resnet_model.fit(train_data_10_percent,
+                                  epochs = 5,
+                                  steps_per_epoch = len(train_data_10_percent),
+                                  validation_data = test_data,
+                                  validation_steps = len(test_data),
+                                  callbacks = [create_tensorboard_callback(dir_name="tensorflow_hub",
+                                                                           experiment_name="resnet50v2")])
 
+"""wow!
+
+That is Increadible . our transfer learning feature extractor model out performed All of the previous models we built by hands...(substantially) and in a quicker training time AND with only 10% of the training examples.
+
+"""
+
+import matplotlib.pyplot as plt
+
+# Let's create a function to plot our loss curves...
+# Tidbit : you could put a function like this into a script called "helper.py" and import it when you need it ...
+import matplotlib.pyplot as plt
+
+# plot the validation and training curves
+
+def plot_loss_curves(history):
+  """
+  Returns separate loss curves for training and validation metrics.
+
+  Args:
+     history : TensorFlow History object.
+
+  Returns :
+    Plot of training/validation loss accuracy metrics.
+
+    """
+   loss = history.history["loss"]
+   val_loss = history.history["val_loss"]
+
+   accuracy = history.history["accuracy"]
+   val_accuracy = history.history["val_accuracy"]
+
+   epochs = range(len(history.history["loss"]))
+
+   # plot loss
+   plt.plot(epochs,loss,label = "training_loss")
+   plt.plot(epochs,val_loss,label = "val_loss")
+   plt.title("Loss")
+   plt.xlabel("Epochs")
+   plt.legend()
+
+   # plot accuracy 
+   plt.figure()
+   plt.plot(epochs,accuracy,label="training_accuracy")
+   plt.plot(epochs,val_accuracy,label = "val_accuracy")
+   plt.title("Accuracy")
+   plt.xlabel("Epochs")
+   plt.legend()
+
+
+
+resnet_model.summary()
