@@ -212,3 +212,66 @@ def plot_loss_curves(history):
 
 
 resnet_model.summary()
+
+"""### Creating and Testing EfficientNetB0 TensorFlow hub Feature Extraction model """
+
+# Create EfficientNetB0 feature extractor model - details on EfficientNet: https://ai.googleblog.com/2019/05/efficientnet-improving-accuracy-and.html
+
+efficientnet_model = create_model(model_url=efficientnet_url,
+                                  num_classes=train_data_10_percent.num_classes)
+
+# Compile EfficientNet model
+efficientnet_model.compile(loss="categorical_crossentropy",
+                           optimizer=tf.keras.optimizers.Adam(),
+                           metrics=["accuracy"])
+# fit EfficientNet model to 10% of training data
+efficientnet_history = efficientnet_model.fit(train_data_10_percent,
+                                              epochs=5,
+                                              steps_per_epoch=len(train_data_10_percent),
+                                              validation_data=test_data,
+                                              validation_steps=len(test_data),
+                                              callbacks=[create_tensorboard_callback(dir_name="tensorflow_hub",
+                                                                                     experiment_name="efficientnetb0")])
+
+plot_loss_curves(efficientnet_history)
+
+efficientnet_model.summary()
+
+resnet_model.summary()
+
+# How many layers does our efficientnetb0 feature extractor have?
+
+len(efficientnet_model.layers[0].weights)
+
+"""## Different type of transfer learning 
+
+*  **"As is" transfer learning** - using an existing model with no changes what so ever (e.g using ImageNet model on 1000 ImageNet classes,non of your own)
+*  **"Feature extraction" transfer learning** - use the prelearned patterns of an existing model (e.g. EfficientNetB0 trained on ImageNet) and adjust the output layer for your own problem (e.g 1000 classes -> 10 classes of food)
+* **"Fine_tuning" transfer learning** - use the prelearned patterns of an existing of an existing model and "fine-tune" many or all of the underlying layers (inclusing new output layers).
+
+## Comparing our models results using TensorBoard 
+
+**Note:** when you upload things to TensorBoard.dev, you experiment are public. if you are running private experiments ( things you don't want others to see) do not upload them to TensorBoard.dev.
+"""
+
+# Upload TensorBoard dev records
+!tensorboard
+dev
+upload - -logdir. / tensorflow_hub / \
+--name
+"EfficientNetB0 vs. ResNet50V2" \
+- -description
+"Comparing two different TF Hub feature extraction models architectures using 10% of training images" \
+- -one_shot
+
+"""our TensorBoard experiments are uploaded publically here : https://tensorboard.dev/experiment/TLO2f7FKRNe4prsRtvGLPQ/"""
+
+# check out what TensorBoard experiments you have
+!tensorboard
+dev
+list
+
+# Delete an experiment
+!tensorboard
+dev
+delet == experiment_id  # you have to put your Id here
