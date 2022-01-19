@@ -72,4 +72,41 @@ train_data_10_percent
 
 for images,labels in train_data_10_percent.take(1):
   print(images,labels)
+  
+"""## Model 0 : Building a transfer learning feature extraction model using the keras functional API
 
+The sequential API is straight-forward, it runs our layers in sequential order.
+
+But the functional API gives us more flexibility with our model. https://www.tensorflow.org/guide/keras/functional
+
+"""
+
+# 1. Create base model with tf.keras.applications
+base_model = tf.keras.applications.EfficientNetB0(include_top = False)
+
+# 2. Freeze the base model(so the underlying pre-trains aren't updated during training )
+base_model.trainable = False
+
+# 3. Create inpute into our model
+inputs = tf.keras.layers.Input(shape= (224,224,3),name="input_layer")
+
+# 4. If using a model like ResNet50V2 you will need to normlize inputs(you don't have to for EfficientNet(s))
+# x = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)(inputs)
+
+# 5. pass the inputs to the base_model
+ x = base_model(inputs)
+ print(f"Shape after passing inputs through base model: {x.shape}")
+
+ # 6. Average pool the outputs of the base model (aggregate all the most important information,reduce number of computations)
+ x = tf.keras.layers.GlobalAveragePooling2D(name = "global_average_pooling_layer")(x)
+ print(f"shape after GlobalAveragePooling2D: {x.shape}")
+
+ # 7. Create the output activation layer
+ outputs = tf.keras.layers.Dense(10,activation="softmax",name = "output_layer")(x)
+
+ # 8 . combine the inputs with the outputs into a model
+ model_0 = tf.keras.Model(inputs,outputs)
+
+ # 9. compile for the model
+
+ # 10. Fit the model
