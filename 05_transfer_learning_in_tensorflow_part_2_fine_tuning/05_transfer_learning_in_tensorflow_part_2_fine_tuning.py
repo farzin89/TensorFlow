@@ -107,6 +107,67 @@ inputs = tf.keras.layers.Input(shape= (224,224,3),name="input_layer")
  # 8 . combine the inputs with the outputs into a model
  model_0 = tf.keras.Model(inputs,outputs)
 
- # 9. compile for the model
+# 9. Compile the model
+model_0.compile(loss='categorical_crossentropy',
+              optimizer=tf.keras.optimizers.Adam(),
+              metrics=["accuracy"])
 
- # 10. Fit the model
+# 10. Fit the model (we use less steps for validation so it's faster)
+history_10_percent = model_0.fit(train_data_10_percent,
+                                 epochs=5,
+                                 steps_per_epoch=len(train_data_10_percent),
+                                 validation_data=test_data,
+                                 # Go through less of the validation data so epochs are faster (we want faster experiments!)
+                                 validation_steps=int(0.25 * len(test_data)),
+                                 # Track our model's training logs for visualization later
+                                 callbacks=[create_tensorboard_callback("transfer_learning", "10_percent_feature_extraction")])
+
+# Evaluate on the full test dataset
+model_0.evaluate(test_data)
+
+# Check the layers in our base model
+for layer_number,layer in enumerate(base_model.layers):
+  print(layer_number,layer.name)
+
+# how about we get a summary of the model
+base_model.summary()
+
+# how about a summary of our whole model ?
+model_0.summary()
+
+# Check out our model's training curves
+plot_loss_curves(history_10_percent)
+
+"""## Getting a feature vector from a train model 
+
+Let's demonstrate the Global Average pooling 2D layer...
+
+We have a tensor after our model goes through 'base_model' of shape(None,7,7,1280).
+
+But then when it passes through GlobalAveragePooling2D, it turns into (None, 1280)
+
+Let's use a similar shaped tensor of (1,4,4,3) and then pass it to GlobalAveragePooling2D .
+
+"""
+
+# Define the inpot shape
+
+input_shape = (1,4,4,3)
+
+# Create a random tensor
+tf.random.set_seed(42)
+input_tensor = tf.random.normal(input_shape)
+print(f"Random input tensor:\ {input_tensor}\n")
+
+# Pass the random tensor through a global average pooling 2D layer
+global_average_pooled_tensor = tf.keras.layers.GlobalAvgPool2D()(input_tensor)
+print(f"2D global average pooled random tensor:\n {global_average_pooled_tensor}\n")
+
+# Check the shape of the different tensors
+print(f"shape of input tensore:{input_tensor.shape}")
+print(f"shape of Glabal Average Pooled 2D tensor:{global_average_pooled_tensor.shape}")
+
+# Let's replicate the GlobalAveragePool2D layer
+tf.reduce_mean(input_tensor,axis=[1,2])
+
+"""**practice:** Try to do the same with the above two cells but this time use 'GlobalMaxpool2D' and see what happens."""
