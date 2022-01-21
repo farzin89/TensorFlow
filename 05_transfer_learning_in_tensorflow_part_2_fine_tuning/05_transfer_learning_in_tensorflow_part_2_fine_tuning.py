@@ -171,3 +171,87 @@ print(f"shape of Glabal Average Pooled 2D tensor:{global_average_pooled_tensor.s
 tf.reduce_mean(input_tensor,axis=[1,2])
 
 """**practice:** Try to do the same with the above two cells but this time use 'GlobalMaxpool2D' and see what happens."""
+**Note:** one of the reason feature extraction transfer learning is named how it is because what often happens is pretrained model outputs a **feature vector** (a long tensor of numbers which represents the learned representation of the model on a particular sample, in our case, this is the output of ' tf.keras.layers.GlobalAveragepooling2D()' layer) which can then be used to extract patterns out of our own specific problem.
+
+## Running a series of transfer learning experiments
+
+we've seen the incredible results transfer learning can get with only 10 % of the training data , but how does it go with 1% of the training data... how about we set up a bunch of experiments to find out :
+
+1. 'model_1' - use feature extraction transfer learning with 1 % of trainig data with data augmentation
+2. 'model_2'-  use feature extraction transfer learning with 10% of the training with data augmentation
+3. 'model_3'- use fine-tuning transfer learning on 10 % of the training data with data augmentation
+4. 'model_4'- use fine-tuning transfer learning on 100 % of the training data with data augmentation
+
+**Note** : throughout all experiments the same test dataset will be used to evaluate our model... this ensures consistency across evaluation metrics.
+
+### Getting and preprocessing data for model_1
+
+
+# Download and unzip data - preprocessed from food101
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/10_food_classes_1_percent.zip
+unzip_data("10_food_classes_1_percent.zip")
+
+train_dir_1_percent = "10_food_classes_1_percent/train"
+test_dir= "10_food_classes_1_percent/test"
+
+# How many images are we working with? 
+walk_through_dir("10_food_classes_1_percent")
+
+# Setup data loaders 
+IMG_SIZE = (224,224)
+train_data_1_percent = tf.keras.preprocessing.image_dataset_from_directory(train_dir_1_percent,
+                                                                           label_mode = "categorical",
+                                                                           image_size = IMG_SIZE,
+                                                                           batch_size=BATCH_SIZE) # default = 32
+test_data = tf.keras.preprocessing.image_dataset_from_directory(test_dir,
+                                                                label_mode = "categorical",
+                                                                image_size = IMG_SIZE,
+                                                                batch_size = BATCH_SIZE)
+
+"""## Adding data augmentation right into the model
+
+To add data augmentation right into our models,we can use the layers inside:
+* 'tf.keras.layers.experimental.preprocessins() '
+
+we can see the benefits of doing this within the TensorFlow Data augmentation documentation : https://www.tensorflow.org/tutorials/images/data_augmentation#use_keras_preprocessing_layers
+
+off the top our of heads, after reading the the docs,the benefits of using data augmentation inside the model are :
+* Preprocessing of image ( augmenting them) happens on the GPU (much faster) rather than the CPU.
+* Image data augmentation only happens during training, so we can still export our whole model and use it elsewhere."""
+
+
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import  layers
+from tensorflow.keras.layers.experimental import preprocessing
+
+# Create data augmentation stage with horizontal flipping , rotations,zooms,etc
+data_augmentation =  keras.Sequential([
+    preprocessing.RandomFlip("horizontal"),
+    preprocessing.RandomRotation(0.2),
+    preprocessing.RandomZoom (0.2),
+    preprocessing.RandomHeight(0.2),
+    preprocessing.RandomWidth(0.2),
+    #preprocessing.Rescale(1./255) # Keep for models like ResNet50v2 but EfficientNet's having rescaling built-in
+],name = "data_augmentation")
+
+## Visualize our data augmentation layer(and see what happens to our data)
+
+# View a random image and compare it to its augmented version
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import os
+import random
+target_class = random.choice(train_data_1_percent.class_names)
+target_dir = "10_food_classes_1_percent/train/" + target_class
+random_image = random.choice(os.listdir(target_dir))
+random_image_path = target_dir + "/" + random_image
+
+# Read in the random image
+img = mpimg.imread(random_image_path)
+plt.imshow(img)
+plt.title(f"Original random image from class: {target_class}")
+plt.axis(False)
+
+# Now let's plot our augmented random image
