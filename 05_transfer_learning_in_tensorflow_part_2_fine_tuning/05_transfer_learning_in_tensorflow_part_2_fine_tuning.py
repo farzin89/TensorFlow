@@ -255,3 +255,49 @@ plt.title(f"Original random image from class: {target_class}")
 plt.axis(False)
 
 # Now let's plot our augmented random image
+augmented_img = data_augmentation(tf.expand_dims(img,axis=0))
+plt.figure()
+plt.imshow(tf.squeeze(augmented_img)/255.)
+plt.title(f"Augmented random image from class:{target_class}")
+plt.axis(False)
+
+"""## Model 1: Feature extraction transfer learning on 1% of the data with data augmentation """
+
+#setup input shape and base model, freezing the base model layers
+input_shape = (224,224,3)
+base_model = tf.keras.applications.EfficientNetB0(include_top=False)
+base_model.trainable = False
+
+# Create input layer
+inputs = layers.Input(shape=input_shape,name="input_layer")
+
+# Add in data augmentation Sequential model as a layer
+x = data_augmentation(inputs)
+
+# Give base_model the inputs (after augmentation) and don't train it
+x = base_model(x,training = False)
+
+# Pool output features of the base model
+x = layers.GlobalAvgPool2D(name = "global")(x)
+
+# put a dense layer on as the output
+outputs = layers.Dense(10,activation="softmax",name = "output_layer")(x)
+
+# Make a model using the inputs and outputs
+model_1 = keras.Model(inputs,outputs)
+
+# Compile the model
+model_1.compile(loss = "categorical_crossentropy",
+                optimizer = tf.keras.optimizers.Adam(),
+                metrics = ["accuracy"])
+
+# Fit the model
+
+history_1_percent = model_1.fit(train_data_1_percent,
+                                epochs = 5,
+                                steps_per_epoch = len(train_data_1_percent),
+                                validation_data = test_data,
+                                validation_steps =int(0.25 * len(test_data)),
+                                #Track model training logs
+                                callbacks = [create_tensorboard_callback(dir_name= "transfer_learning",
+                                                                        experiment_name = "1_percent_data_aug")]
