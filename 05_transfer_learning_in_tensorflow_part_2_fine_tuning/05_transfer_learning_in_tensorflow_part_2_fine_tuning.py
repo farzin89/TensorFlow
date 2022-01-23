@@ -300,4 +300,117 @@ history_1_percent = model_1.fit(train_data_1_percent,
                                 validation_steps =int(0.25 * len(test_data)),
                                 #Track model training logs
                                 callbacks = [create_tensorboard_callback(dir_name= "transfer_learning",
-                                                                        experiment_name = "1_percent_data_aug")]
+                                                                        experiment_name = "1_percent_data_aug")])
+# check out a model summary
+model_1.summary()
+
+# Evaluate on the full test dataset
+results_1_percent_data_aug = model_1.evaluate(test_data)
+results_1_percent_data_aug
+
+# How do the model with 1 % of data augmentation loss curves look?
+plot_loss_curves(history_1_percent)
+
+"""## model 2 : feature extraction transfer learning model with 10% of data and data augmentation 
+
+
+
+"""
+
+# Get 10% of data ...(uncomment if you don't have it )
+# !wget https://storage.googleapis.com/ztm_tf_course/food_vision/10_food_classes_all_data.zip
+# unzip_data(10_food_classes_10_percent)
+
+train_dir_10_percent = "10_food_classes_10_percent/train"
+test_dir = "10_food_classes_10_percent/test"
+
+# How many images are in our directories?
+walk_through_dir("10_food_classes_10_percent")
+
+# Set data inputs
+import tensorflow as tf
+
+IMG_SIZE = (224, 224)
+train_data_10_percent = tf.keras.preprocessing.image_dataset_from_directory(train_dir_10_percent,
+                                                                            label_mode="categorical",
+                                                                            image_size=IMG_SIZE)
+test_data = tf.keras.preprocessing.image_dataset_from_directory(test_dir,
+                                                                label_mode="categorical",
+                                                                image_size=IMG_SIZE)
+
+# create model 2 with data augmentation built in
+from tensorflow.keras import layers
+from tensorflow.keras.layers.experimental import preprocessing
+from tensorflow.keras.models import Sequential
+
+# Build data augmentation
+data_augmentation = Sequential([
+    preprocessing.RandomFlip('horizontal'),
+    preprocessing.RandomHeight(0.2),
+    preprocessing.RandomWidth(0.2),
+    preprocessing.RandomZoom(0.2),
+    preprocessing.RandomRotation(0.2),
+    # preprocessing.Rescaling(1./255) # if you're using a model such as ResNet50v2, you'll need to rescale your data,efficientnet has rescaling built-in
+
+], name="data_augmentation")
+
+# Setup the input shape to our model
+input_shape = (224, 224, 3)
+
+# Create a frozen base model (also called the backbone)
+base_model = tf.keras.applications.EfficientNetB0(include_top=False)
+base_model.trainable = False
+
+# Create the inputs and outputs (including the layers in between)
+inputs = layers.Input(shape=input_shape, name="input_layer")
+x = data_augmentation(inputs)  # augment our training images(augmentation doesn't occure on test data)
+x = base_model(x,
+               training=False)  # pass the augmented images to base model but keep it in inference mode,this also insures batchnorm layers don't get updated - https://keras.io/guides/transfer_learning/#build-a-model
+x = layers.GlobalAveragePooling2D(name="global_average_pooling_2D")(x)
+outputs = layers.Dense(10, activation="softmax", name="output_layer")(x)
+model_2 = tf.keras.Model(inputs, outputs)
+
+# Compile the model
+
+model_2.compile(loss="categorical_crossentropy",
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=["accuracy"])
+
+"""### Creating a ModelCheckpoint callback 
+
+The ModelCheckpoint callback intermediately saves our model(the full model or just the weights) during training. This is useful so we can come and start where we left off.
+"""
+
+# Set checkpoint path
+checkpoint_path = "ten_percent_model_checkpoints_weights/checkpoint.ckpt"
+
+# Create a Modelcheckpoint callback that saves the model's weights only
+checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                         save_weights_only=True,
+                                                         save_best_only=False,
+                                                         save_freq="epoch",  # save every epoch,
+                                                         verbose=1)
+
+"""### Fit model 2 passing in the ModelCheckpoint callbacks
+
+"""
+
+# Fit the model saving checkpoints every epoch
+initial_epochs = 5
+history_10_percent_data_aug = model_2.fit(train_data_10_percent,
+                                          epochs=initial_epochs,
+                                          validation_data=test_data,
+                                          validation_steps=int(0.25 * len(test_data)),
+                                          callbacks=[create_tensorboard_callback(dir_name="transfer_learning",
+                                                                                 experiment_name="10_percent_data_aug"),
+                                                     checkpoint_callback])
+
+# what were model_0 results?
+model_0.evaluate(test_data)
+
+# Check model_2 results on all test_data
+results_10_percent_data_aug = model_2.evaluate(test_data)
+results_10_percent_data_aug
+
+# plot model loss curves
+plot_loss_curves(history_10_percent_data_aug)
