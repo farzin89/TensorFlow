@@ -414,3 +414,129 @@ results_10_percent_data_aug
 
 # plot model loss curves
 plot_loss_curves(history_10_percent_data_aug)
+
+"""### Loading in checkpointed weights 
+
+loading in checkpointed weights returns a model to a specific checkpoint
+"""
+
+# Load in saved model weights and evaluate nodel
+model_2.load_weights(checkpoint_path)
+
+# Evaluate model_2 with loaded weights
+loaded_weights_model_results = model_2.evaluate(test_data)
+
+# If the results from our previously evaluated model_2 match the loaded weights, everything has worked!
+results_10_percent_data_aug == loaded_weights_model_results
+
+results_10_percent_data_aug
+
+loaded_weights_model_results
+
+# check to see if loaded model results are very close to our previous non-loaded model results
+import numpy as np
+np.isclose(np.array(results_10_percent_data_aug),np.array(loaded_weights_model_results))
+
+# check the difference between the two results
+print(np.array(results_10_percent_data_aug)- np.array(loaded_weights_model_results))
+
+"""## Model_3: Fine-tuning an existing model on 10% of the data
+
+**Note:** Fine-tuning usually works best after training a feature extraction model for a few epochs with large amounts of custom data.
+
+"""
+
+# Layers in loaded model
+model_2.layers
+
+# Are these layers trainable ?
+for layer in model_2.layers:
+  print(layer,layer.trainable)
+
+# What layers are in our base_model (EfficientNetB0) and are they trainable?
+for i,layer in enumerate(model_2.layers[2].layers):
+  print(i,layer.name,layer.trainable)
+
+# How many trainable variable are in our base model ?
+print(len(model_2.layers[2].trainable_variables))
+
+# To begin fine-tuning, let's start by setting the last 10 layers of our base_model.trainable = True
+base_model.trainable = True
+# Freeze all layers exceot for the last 10
+for layer in base_model.layers[:-10]:
+  layer.trainable = False
+
+# Recompile (we have to recompile our models every time we make a change)
+model_2.compile(loss="categorical_crossentropy",
+                optimizer = tf.keras.optimizers.Adam(lr=0.0001),# when fine-tuning you typically want to lower the learning rate by 10x*
+                metrics =["accuracy"])
+
+"""**Note:** when using fine-tuning it's best practie to lower your learning rate by some amount. How much ? This is hyperparameter you can tune. But a good rule of thumb is at least 10x (though different sources wii claim other values) . A good resource for information on this is the ULMFIT paper : https://arxiv.org/abs/1801.06146"""
+
+# check which layers are tunable (trainable)
+for layer_number,layer in enumerate(model_2.layers[2].layers):
+ print(layer_number,layer.name, layer.trainable)
+
+# Now we've unfrozen some of the layers closer to the top, how many trainable variable are there?
+print(len(model_2.trainable_variables))
+
+# Fine tune for another 5 epochs
+fine_tune_epochs = initial_epochs + 5
+
+# Refit the model (same as model_2 except with more trainable layers)
+history_fine_10_percent_data_aug = model_2.fit(train_data_10_percent,
+                                               epochs = fine_tune_epochs,
+                                               validation_data = test_data,
+                                               validation_steps = int(0.25 * len(test_data)),
+                                               initial_epoch = history_10_percent_data_aug.epoch[-1], #start training from previous last epoch
+                                               callbacks = [create_tensorboard_callback(dir_name="transfer_learning",
+                                                                                        experiment_name = "10_percent_fine_tune_last_10")])
+
+# Evaluate the fine-tuned model (model_3 which is actualy model_2 fine-tuned for another 5 epochs )
+results_fine_tune_10_percent = model_2.evaluate(test_data)
+
+# Check out the loss curves of our fine-tuned model
+plot_loss_curves(history_fine_10_percent_data_aug)
+
+"""The 'plot_loss_curves' function works great with models which have only been fit once,however, we want something to compare one series of running 'fit()' with another (e.g before and after fine-tuning)."""
+
+# Let's create a function to compare training histories
+def compare_historys(original_history , new_history,initial_epochs = 5):
+  """
+  Compares two TensorFlow History objects.
+  """
+  # Get original history measurments
+  acc = original_history.history["accuracy"]
+  loss = original_history.history["loss"]
+
+  val_acc = original_history.history["val_accuracy"]
+  val_loss = original_history.history["val_loss"]
+
+  # combine original history metrics with new_history metrics
+  total_acc = acc + new_history.history["accuracy"]
+  total_loss = loss + new_history.history["loss"]
+
+  total_val_acc = val_acc + new_history.history["val_accuracy"]
+  total_val_loss = val_loss + new_history.history["val_loss"]
+
+  # Make plots for accuracy
+  plt.figure(figsize = (8,8))
+  plt.subplot(2,1,1)
+  plt.plot(total_acc, label ="Training accuracy")
+  plt.plot (total_val_acc , label = "val accuracy ")
+  plt.plot([initial_epochs-1,initial_epochs-1],plt.ylim(),label = "start Fine Tuning")
+  plt.legend(loc = "lower right")
+  plt.title("Training and Validation Acuuracy")
+
+  # Make plots for loss
+  plt.figure(figsize = (8,8))
+  plt.subplot(2,1,2)
+  plt.plot(total_loss, label ="Training loss")
+  plt.plot (total_val_loss , label = " val loss ")
+  plt.plot([initial_epochs-1,initial_epochs-1],plt.ylim(),label = "start Fine Tuning")
+  plt.legend(loc = "upper right")
+  plt.title("Training and Validation loss")
+
+compare_historys(history_10_percent_data_aug,
+                 history_fine_10_percent_data_aug,
+                 initial_epochs =5)
