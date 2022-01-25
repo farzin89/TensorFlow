@@ -540,3 +540,112 @@ def compare_historys(original_history , new_history,initial_epochs = 5):
 compare_historys(history_10_percent_data_aug,
                  history_fine_10_percent_data_aug,
                  initial_epochs =5)
+
+"""## Model 4 : Fine-tuning and existing model on all of data"""
+
+# Download and unzip 10 classes of Food101 data with all images
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/10_food_classes_all_data.zip
+unzip_data("10_food_classes_all_data.zip")
+
+# Setup training and test dir
+train_dir_all_data = "10_food_classes_all_data/train"
+test_dir = "10_food_classes_all_data/test"
+
+# How many images are we working with now?
+walk_through_dir("10_food_classes_all_data")
+
+# setup data inputs
+import tensorflow as tf
+IMG_SIZE = (224,224)
+train_data_10_classes_full = tf.keras.preprocessing.image_dataset_from_directory(train_dir_all_data,
+                                                                                 label_mode = "categorical",
+                                                                                 image_size = IMG_SIZE)
+test_data = tf.keras.preprocessing.image_dataset_from_directory(test_dir,
+                                                                label_mode = "categorical",
+                                                                image_size = IMG_SIZE)
+
+"""The test dataset we've loaded in is the same as what we've been using for previous experiments( all experiments have used the same test dataset).
+
+Let's verfy this...
+"""
+
+# Evaluate model 2 (this is fine-tuned on 10 percent of data version)
+model_2.evaluate(test_data)
+
+results_fine_tune_10_percent
+
+"""To train a fine-tuning model (model_4) we need to revert model_2 back to its feature extraction weights."""
+
+# Load weight from checkpoint, that way we can fine-tune from
+# the same stage the 10 percent data model was fine-tuned from
+model_2.load_weights(checkpoint_path)
+
+# Let's evaluate model_2 now
+model_2.evaluate(test_data)
+
+# Check to see if our model_2 has been reserved back to feature extraction results
+results_10_percent_data_aug
+
+"""Alright,the previous steps might seem quite confusing but all we've done is :    
+1. Trrained afeature extraction transfer learning model for 5 epochs on 10% of the data with data augmentation (model_2) and we saved the model's weights using 'modelCheckpoint' callback.
+2. Fine-tuned the same model on the same 10% of the data for a further 5 epochs with the top 10 layers of the base model unfrozen (model_3)
+3. saved the results and training logs each time.
+4. Reloaded the model we're going to use all of the data (model_4)
+
+
+
+
+"""
+
+# Check which layers are tunable in the whole model
+for layer_number, layer in enumerate(model_2.layers):
+  print(layer_number,layer.name,layer.trainable)
+
+# Let's drill into our base_model (efficientnetb0) and see what layers are trainable
+for layer_number,layer in enumerate (model_2.layers[2].layers):
+  print(layer_number,layer.name,layer.trainable)
+
+# Compile
+ model_2.compile(loss = "categorical_crossentropy",
+                 optimizer = tf.keras.optimizers.Adam(lr=0.0001),
+                 metrics = ["accuracy"])
+
+# continue to train and fine-tune the model to our data (100% of training data)
+fine_tune_epochs = initial_epochs + 5
+
+history_fine_10_classes_full = model_2.fit(train_data_10_classes_full,
+                                           epochs = fine_tune_epochs,
+                                            validation_data = test_data,
+                                           validation_steps = int (0.25 * len (test_data)),
+                                           initial_epoch = history_10_percent_data_aug.epoch[-1],
+                                           callbacks = [create_tensorboard_callback(dir_name="transfer_learning",
+                                                                                    experiment_name = "full_10_classes_fine_tune_last_10")])
+
+# Let's evaluate on all of the test data
+results_fine_tune_full_data = model_2.evaluate(test_data)
+results_fine_tune_full_data
+
+#How did fine-tuning go with more data?
+compare_historys(original_history= history_10_percent_data_aug,
+                 new_history = history_fine_10_classes_full,
+                 initial_epochs = 5)
+
+"""## Viewing our experiment data on TensorBoard 
+
+**Note:** anything you upload to TensorBoard.dev is going to be public. so if you have private data, do not upload.
+"""
+
+# View tensorboard logs of transfer learning modelling experiments(should ~ 4 models)
+# Upload TensorBoard dev records
+!tensorboard dev upload --logdir ./transfer_learning\
+  --name "Transfer learning Experiments with 10 Food101 classes"\
+  --description " A series of different transfer learning experiments with varying amounts of data and fine-tuning."\
+  --one_shot # exits the uploader once its finished uploading
+
+"""My tensorBoard experiments are available at : https://tensorboard.dev/experiment/Xqbcke5mRE2dUGXI4LDAKw/"""
+
+# View all of your uploaded TensorBoard.dev experiments (public)
+!tensorboard dev list
+
+# To delete an expreiment
+#!tensorboard dev delet--experiment_id
