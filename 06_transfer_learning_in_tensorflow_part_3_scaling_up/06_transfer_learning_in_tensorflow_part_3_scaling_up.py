@@ -37,3 +37,101 @@ our goal is to beat the original Food101 paper with 10% of the training data,so 
 the data we'ar dowloading comes from the original Food101 dataset but has been preprocessed using the image_data_modificatio notebook - https://github.com/mrdbourke/tensorflow-deep-learning/blob/main/extras/image_data_modification.ipynb
 """
 
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/101_food_classes_10_percent.zip
+unzip_data("101_food_classes_10_percent.zip")
+
+train_dir = "101_food_classes_10_percent/train/"
+test_dir = "101_food_classes_10_percent/test/"
+
+# how many images/classes are there ?
+walk_through_dir("101_food_classes_10_percent")
+
+# Setup data inputs
+import tensorflow as tf
+IMG_SIZE = (244,244)
+train_data_all_10_percent = tf.keras.preprocessing.image_dataset_from_directory(train_dir,
+                                                                                label_mode = "categorical",
+                                                                                image_size = IMG_SIZE)
+test_data = tf.keras.preprocessing.image_dataset_from_directory(test_dir,
+                                                                label_mode = "categorical",
+                                                                image_size = IMG_SIZE,
+                                                                shuffle = False) # don't shuffle test data  for prediction analysis
+
+"""## Train a big dog model with transfer learning on 10% of 101 food classes
+
+Here are the steps we're going to take:
+* Create a ModelCheckpoint callback
+* Create a data augmentation layer to build data augmentation right into the model 
+* build a headless(no top layers) Functional EfficientNetB0 backboned-model(we'll create our own output layer)
+* Compile our model 
+* Feature extract for 5 full lasses (5 epochs on the train dataset and validation and validat on 15% of the test data,to save epoch time)
+
+
+"""
+
+# Create checkpoint callback
+
+checkpoint_path = "101_classes_10_percent_data_model_checkpoint"
+checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                                         save_weights_only=True, # save only the model weights
+                                                         monitor="val_accuracy", # save the model weights which score the best validation accuracy
+                                                         save_best_only=True) # only keep the best model weights on file (delete the rest)
+
+# Create data augmentation layer to incorporate it right into the model
+
+from tensorflow.keras import layers
+from tensorflow.keras.layers.experimental import preprocessing
+from tensorflow.keras.models import Sequential
+# setup data augmentation
+data_augmentation = Sequential([
+    preprocessing.RandomFlip("horizontal"),
+    preprocessing.RandomRotation(0.2),
+    preprocessing.RandomHeight(0.2),
+    preprocessing.RandomWidth(0.2),
+    preprocessing.RandomZoom(0.2),
+   # preprocessing.Rescaling(1/255.) # rescale inputs of images to between 0 & 1, required for models like ResNet50
+],name= "data_augmentation")
+
+# Setup the base model and freeze its layers (this will extract features)
+base_model = tf.keras.applications.EfficientNetB0(include_top=False)
+base_model.trainable = False
+
+# Setup model architecture with trainable top layers
+inputs = layers.Input(shape = (224,224,3),name = "input_layer")
+x = data_augmentation(inputs) # augment images (only happens during training phase)
+x = base_model(x,training = False) # put the base model in inference mode so weights which need to stay frozen,stay frozen
+x = layers.GlobalAvgPool2D(name = "global_avg_pool_layer")(x)
+outputs = layers.Dense(len(train_data_all_10_percent.class_names),activation = "softmax",name= "output_layer")(x)
+model = tf.keras.Model(inputs,outputs)
+
+# Get a summary of model we've created
+model.summary()
+
+# Compile
+model.compile(loss="categorical_crossentropy",
+              optimizer=tf.keras.optimizers.Adam(), # use Adam with default settings
+              metrics=["accuracy"])
+
+# Fit
+history_all_classes_10_percent = model.fit(train_data_all_10_percent,
+                                           epochs=5, # fit for 5 epochs to keep experiments quick
+                                           validation_data=test_data,
+                                           validation_steps=int(0.15 * len(test_data))# evaluate on smaller portion of test data
+                                           #callbacks=[checkpoint_callback]
+                                           )
+
+# Compile tje model
+model.compile(loss ="categorical_crossentropy",
+              optimizer = tf.keras.optimizers.Adam(),
+              metrics = ["accuracy"])
+
+
+# Fit
+history_all_classes_10_percent = model.fit(train_data_all_10_percent,
+                                           epochs=5, # fit for 5 epochs to keep experiments quick
+                                           validation_data=test_data,
+                                           validation_steps=int(0.15 * len(test_data)), # evaluate on smaller portion of test data
+                                           callbacks=[checkpoint_callback]) # save best model weights to fil
+
+
+
