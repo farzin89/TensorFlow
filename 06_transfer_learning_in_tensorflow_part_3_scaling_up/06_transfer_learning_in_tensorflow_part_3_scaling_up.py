@@ -15,20 +15,21 @@ Our goal is to beat the original Food101 paper Food101 paper with 10% of the tra
 original Food101 paper : https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/static/bossard_eccv14_food-101.pdf
 
 our baseline to beat is 50.76% accuracy across 101 classes.
+:
 """
 
-# check if we are using GPU
-!nvidia-smi
+# Get helper functions file
+!wget
+https: // raw.githubusercontent.com / mrdbourke / tensorflow - deep - learning / main / extras / helper_functions.py
 
 """## Create helper functions
 
 In previous notebooks, we've created a series of helper functions to do different tasks,let's download them.
 """
 
-!wget https://raw.githubusercontent.com/mrdbourke/tensorflow-deep-learning/main/extras/helper_functions.py
-
-# Import series of helper functions for our notebook
-from helper_functions import create_tensorboard_callback,plot_loss_curves,unzip_data,compare_historys,walk_through_dir
+# Import series of helper functions for the notebook (we've created/used these in previous notebooks)
+from helper_functions import create_tensorboard_callback, plot_loss_curves, unzip_data, compare_historys, \
+    walk_through_dir
 
 """# 101 Food Classes: working with less data
 
@@ -37,25 +38,31 @@ our goal is to beat the original Food101 paper with 10% of the training data,so 
 the data we'ar dowloading comes from the original Food101 dataset but has been preprocessed using the image_data_modificatio notebook - https://github.com/mrdbourke/tensorflow-deep-learning/blob/main/extras/image_data_modification.ipynb
 """
 
-!wget https://storage.googleapis.com/ztm_tf_course/food_vision/101_food_classes_10_percent.zip
+# Download data from Google Storage (already preformatted)
+!wget
+https: // storage.googleapis.com / ztm_tf_course / food_vision / 101
+_food_classes_10_percent.zip
+
 unzip_data("101_food_classes_10_percent.zip")
 
 train_dir = "101_food_classes_10_percent/train/"
 test_dir = "101_food_classes_10_percent/test/"
 
-# how many images/classes are there ?
+# How many images/classes are there?
 walk_through_dir("101_food_classes_10_percent")
 
 # Setup data inputs
 import tensorflow as tf
-IMG_SIZE = (244,244)
+
+IMG_SIZE = (224, 224)
 train_data_all_10_percent = tf.keras.preprocessing.image_dataset_from_directory(train_dir,
-                                                                                label_mode = "categorical",
-                                                                                image_size = IMG_SIZE)
+                                                                                label_mode="categorical",
+                                                                                image_size=IMG_SIZE)
+
 test_data = tf.keras.preprocessing.image_dataset_from_directory(test_dir,
-                                                                label_mode = "categorical",
-                                                                image_size = IMG_SIZE,
-                                                                shuffle = False) # don't shuffle test data  for prediction analysis
+                                                                label_mode="categorical",
+                                                                image_size=IMG_SIZE,
+                                                                shuffle=False)  # don't shuffle test data for prediction analysis
 
 """## Train a big dog model with transfer learning on 10% of 101 food classes
 
@@ -69,69 +76,141 @@ Here are the steps we're going to take:
 
 """
 
-# Create checkpoint callback
-
+# Create checkpoint callback to save model for later use
 checkpoint_path = "101_classes_10_percent_data_model_checkpoint"
 checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
-                                                         save_weights_only=True, # save only the model weights
-                                                         monitor="val_accuracy", # save the model weights which score the best validation accuracy
-                                                         save_best_only=True) # only keep the best model weights on file (delete the rest)
+                                                         save_weights_only=True,  # save only the model weights
+                                                         monitor="val_accuracy",
+                                                         # save the model weights which score the best validation accuracy
+                                                         save_best_only=True)  # only keep the best model weights on file (delete the rest)
 
-# Create data augmentation layer to incorporate it right into the model
-
+# Import the required modules for model creation
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 from tensorflow.keras.models import Sequential
-# setup data augmentation
-data_augmentation = Sequential([
-    preprocessing.RandomFlip("horizontal"),
-    preprocessing.RandomRotation(0.2),
-    preprocessing.RandomHeight(0.2),
-    preprocessing.RandomWidth(0.2),
-    preprocessing.RandomZoom(0.2),
-   # preprocessing.Rescaling(1/255.) # rescale inputs of images to between 0 & 1, required for models like ResNet50
-],name= "data_augmentation")
 
-# Setup the base model and freeze its layers (this will extract features)
+# Setup data augmentation
+data_augmentation = Sequential([
+    preprocessing.RandomFlip("horizontal"),  # randomly flip images on horizontal edge
+    preprocessing.RandomRotation(0.2),  # randomly rotate images by a specific amount
+    preprocessing.RandomHeight(0.2),  # randomly adjust the height of an image by a specific amount
+    preprocessing.RandomWidth(0.2),  # randomly adjust the width of an image by a specific amount
+    preprocessing.RandomZoom(0.2),  # randomly zoom into an image
+    # preprocessing.Rescaling(1./255) # keep for models like ResNet50V2, remove for EfficientNet
+], name="data_augmentation")
+
+# Setup base model and freeze its layers (this will extract features)
 base_model = tf.keras.applications.EfficientNetB0(include_top=False)
 base_model.trainable = False
 
 # Setup model architecture with trainable top layers
-inputs = layers.Input(shape = (224,224,3),name = "input_layer")
-x = data_augmentation(inputs) # augment images (only happens during training phase)
-x = base_model(x,training = False) # put the base model in inference mode so weights which need to stay frozen,stay frozen
-x = layers.GlobalAvgPool2D(name = "global_avg_pool_layer")(x)
-outputs = layers.Dense(len(train_data_all_10_percent.class_names),activation = "softmax",name= "output_layer")(x)
-model = tf.keras.Model(inputs,outputs)
+inputs = layers.Input(shape=(224, 224, 3), name="input_layer")  # shape of input image
+x = data_augmentation(inputs)  # augment images (only happens during training)
+x = base_model(x,
+               training=False)  # put the base model in inference mode so we can use it to extract features without updating the weights
+x = layers.GlobalAveragePooling2D(name="global_average_pooling")(x)  # pool the outputs of the base model
+outputs = layers.Dense(len(train_data_all_10_percent.class_names), activation="softmax", name="output_layer")(
+    x)  # same number of outputs as classes
+model = tf.keras.Model(inputs, outputs)
 
 # Get a summary of model we've created
 model.summary()
 
 # Compile
 model.compile(loss="categorical_crossentropy",
-              optimizer=tf.keras.optimizers.Adam(), # use Adam with default settings
+              optimizer=tf.keras.optimizers.Adam(),  # use Adam with default settings
               metrics=["accuracy"])
 
 # Fit
 history_all_classes_10_percent = model.fit(train_data_all_10_percent,
-                                           epochs=5, # fit for 5 epochs to keep experiments quick
+                                           epochs=5,  # fit for 5 epochs to keep experiments quick
                                            validation_data=test_data,
-                                           validation_steps=int(0.15 * len(test_data))# evaluate on smaller portion of test data
-                                           #callbacks=[checkpoint_callback]
-                                           )
+                                           validation_steps=int(0.15 * len(test_data)),
+                                           # evaluate on smaller portion of test data
+                                           callbacks=[checkpoint_callback])  # save best model weights to file
 
-# Compile tje model
-model.compile(loss ="categorical_crossentropy",
-              optimizer = tf.keras.optimizers.Adam(),
-              metrics = ["accuracy"])
+# Evaluate on the whole test dataset
+feature_extraction_results = model.evaluate(test_data)
+feature_extraction_results
 
+plot_loss_curves(history_all_classes_10_percent)
 
-# Fit
-history_all_classes_10_percent = model.fit(train_data_all_10_percent,
-                                           epochs=5, # fit for 5 epochs to keep experiments quick
-                                           validation_data=test_data,
-                                           validation_steps=int(0.15 * len(test_data)), # evaluate on smaller portion of test data
-                                           callbacks=[checkpoint_callback]) # save best model weights to fil
+"""**Question:** what do these curves suggest? Hint: ideally,the two curves should be very similar to each other, if not it may suggest that our model is overfitting(performing too well on the training data and not gereralizing to unseen data).
 
+## Fine-tuning
+"""
 
+# Unfreez all of the layers in the base model
+base_model.trainable = True
 
+# Refreez every layer except the last 5
+for layer in base_model.layers[:-5]:
+    layer.trainable = False
+
+# Recompile model with lower learning (it's typically best practice to lower the learning rate when fine-tuning)
+model.compile(loss="categorical_crossentropy",
+              optimizer=tf.keras.optimizers.Adam(lr=0.0001),  # learning rate lowered by 10x
+              metrics=["accuracy"])
+
+# what layers in the model are trainable?
+for layer in model.layers:
+    print(layer.name, layer.trainable)
+
+# check which layers are trainable in our base model
+for layer_number, layer in enumerate(base_model.layers):
+    print(layer_number, layer.name, layer.trainable)
+
+# Fine-tune for 5 more epochs
+fine_tune_epochs = 10  # model has already done 5 epochs, this is the total number of epochs we're after (5+5=10)
+
+history_all_classes_10_percent_fine_tune = model.fit(train_data_all_10_percent,
+                                                     epochs=fine_tune_epochs,
+                                                     validation_data=test_data,
+                                                     validation_steps=int(0.15 * len(test_data)),
+                                                     # validate on 15% of the test data
+                                                     initial_epoch=history_all_classes_10_percent.epoch[
+                                                         -1])  # start from previous last epoch
+
+# Evaluate fine-tuned model on the whole test dataset
+results_all_classes_10_percent_fine_tune = model.evaluate(test_data)
+results_all_classes_10_percent_fine_tune
+
+# Create the histories of feature extraction model with fine-tuning model
+compare_historys(original_history=history_all_classes_10_percent,
+                 new_history=history_all_classes_10_percent_fine_tune,
+                 initial_epochs=5)
+
+"""## Saving and loading our model 
+
+to use model in an external application, we'll need to save it and export it somewhere 
+"""
+
+# save our fine-tuning model
+# model.save("drive/MyDrive/tensorflow_course/101_food_classes_10_percent_saved_big_dog_model")
+
+# load an evaluate saved model
+loaded_model = tf.keras.load_model("drive/MyDrive/tensorflow_course/101_food_classes_10_percent_saved_big_dog_model")
+
+# Evaluate loaded model and compare oerformance to pre-saved model
+loaded_model_results = loaded_model.evaluate(test_data)
+loaded_model_results
+
+# the results from our loaded_model (above should be very similar to the results below)
+all_classes_10_percent_fine_tune_results
+
+"""## Evaluating the performance of big dog model across all different classes
+Let's make some predictions, visualize them and then later find out which predictions were the "most" wrong.
+
+"""
+
+import tensorflow as tf
+
+# Download pretrained model(one that was prepared earlier,all prediction are similar)
+!wget
+https: // storage.googleapis.com / ztm_tf_course / food_vision / 06_101
+_food_class_10_percent_saved_big_dog_model.zip
+
+unzip_data("/content/06_101_food_class_10_percent_saved_big_dog_model.zip")
+
+# Load in saved model
+model = tf.keras.models.load_model("/content/06_101_food_class_10_percent_saved_big_dog_model")
