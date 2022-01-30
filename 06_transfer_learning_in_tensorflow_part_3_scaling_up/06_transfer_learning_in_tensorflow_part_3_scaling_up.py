@@ -214,3 +214,83 @@ unzip_data("/content/06_101_food_class_10_percent_saved_big_dog_model.zip")
 
 # Load in saved model
 model = tf.keras.models.load_model("/content/06_101_food_class_10_percent_saved_big_dog_model")
+
+"""###To make sure our loaded model is indead a trained model, let's evaluate its performance on the test dataset.
+
+
+"""
+
+# Check to see if loaded model is a trained model
+loaded_loss, loaded_accuracy = model.evaluate(test_data)
+loaded_loss, loaded_accuracy
+
+"""###Wonderful! It looks like our loaded model is performing just as well as it was before we saved it. Let's make some predictions
+
+##Making predictions with our trained model
+
+To evaluate our trained model, we need to make some predictions with it and then compare those predictions to the test dataset.
+
+Because the model has never seen the test dataset, this should give us an indication of how the model will perform in the real world on data similar to what it has been trained on.
+
+To make predictions with our trained model, we can use the predict() method passing it the test data.
+
+Since our data is multi-class, doing this will return a prediction probably tensor for each sample.
+
+In other words, every time the trained model see's an image it will compare it to all of the patterns it learned during training and return an output for every class (all 101 of them) of how likely the image is to be that class.
+"""
+
+# Make predictions with model
+preds_probs = model.predict(test_data, verbose=1) #Set verbosity to see how long is left
+
+len(test_data)
+
+# How many predictions are there?
+len(preds_probs)
+
+# what's the shape of our predictions?
+preds_probs.shape
+
+# Let's see what the first 10 predictions look like
+preds_probs[:10]
+
+# what does the first prediction probability array look loke?
+preds_probs[0],len(preds_probs),sum(preds_probs[0])
+
+"""our model outputs a prediction probability array (with N number of variables,where N is the number of classes) for each sample passed to the predict method."""
+
+# We get one prediction probability per class(in our case there's 101 prediction probabilities)
+
+print(f"Number of prediction probabilities for sample 0: {len(preds_probs[0])}")
+print(f"What prediction probability sample 0 looks like:\n {preds_probs[0]}")
+print(f"The class with the highest predicted probability by the model for sample 0:{preds_probs[0].argmax()}")
+
+# Get the pred classes of each label
+pred_classes = preds_probs.argmax(axis=1)
+
+# How do they look?
+pred_classes[:10]
+
+# how many pred classes do we have?
+len(pred_classes)
+
+"""Beautiful! We've now got the predicted class index for each of the samples in our test dataset.
+
+We'll be able to compare these to the test dataset labels to further evaluate our model.
+
+To get the test dataset labels we can unravel our test_data object (which is in the form of a tf.data.Dataset) using the unbatch() method.
+
+Doing this will give us access to the images and labels in the test dataset. Since the labels are in one-hot encoded format, we'll take use the argmax() method to return the index of the label.
+
+**Note**: This unravelling is why we shuffle=False when creating the test data object. Otherwise, whenever we loaded the test dataset (like when making predictions), it would be shuffled every time, meaning if we tried to compare our predictions to the labels, they would be in different orders.
+"""
+
+#To get our test labels we need to unravel our test_data BatchDataset
+y_labels = []
+for images,labels in test_data.unbatch():
+  y_labels.append(labels.numpy().argmax()) # currently test labels look like:[0,0,0,1,...,0,0], we want the index value where the "1" occurs
+y_labels[:10] # look at the first 10
+
+#how many y_labels are there ?
+len(y_labels)
+
+#Evaluating our models predictions
