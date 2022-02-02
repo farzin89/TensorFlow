@@ -294,3 +294,347 @@ y_labels[:10] # look at the first 10
 len(y_labels)
 
 #Evaluating our models predictions
+one
+way
+to
+check
+that
+our
+model
+'s predictions array ia in the same order as our test labels array is to find the accuracy score.
+
+A
+very
+simple
+evaluation is to
+use
+Scikit - Learn
+'s accuracy_score() function which compares truth labels to predicted labels and returns an accuracy score.
+
+If
+we
+'ve created our y_labels and pred_classes arrays correctly, this should return the same accuracy value (or at least very close) as the evaluate() method we used earlier.
+"""
+
+import sklearn
+# Let's try scikit-learn's accuracy score function and see what it comes up with 
+from sklearn.metrics import accuracy_score
+sklearn_accuracy = accuracy_score(y_true=y_labels,
+                                  y_pred= pred_classes)
+sklearn_accuracy
+
+# Does the evaluate method compare to the Scikit-Learn measured accuracy?
+import numpy as np
+print(f"Close? {np.isclose(loaded_accuracy, sklearn_accuracy)} | Difference: {loaded_accuracy - sklearn_accuracy}")
+
+"""
+Okay, it
+looks
+like
+our
+pred_classes
+array and y_labels
+arrays
+are in the
+right
+orders.
+
+How
+about
+we
+get
+a
+little
+bit
+more
+visual
+with a confusion matrix?
+
+To
+do
+so, we
+'ll use our make_confusion_matrix function we created in a previous notebook
+"""
+
+# We'll import our make_confusion_matrix function from https://github.com/mrdbourke/tensorflow-deep-learning/blob/main/extras/helper_functions.py 
+# But if you run it out of the box, it doesn't really work for 101 classes...
+# the cell below adds a little functionality to make it readable.
+from helper_functions import make_confusion_matrix
+
+# Note: The following confusion matrix code is a remix of Scikit-Learn's 
+# plot_confusion_matrix function - https://scikit-learn.org/stable/modules/generated/sklearn.metrics.plot_confusion_matrix.html
+import itertools
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import confusion_matrix
+
+# Our function needs a different name to sklearn's plot_confusion_matrix
+def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(10, 10), text_size=15, norm=False, savefig=False): 
+  """
+Makes
+a
+labelled
+confusion
+matrix
+comparing
+predictions and ground
+truth
+labels.
+
+If
+classes is passed, confusion
+matrix
+will
+be
+labelled,
+if not, integer class values
+will
+be
+used.
+
+Args:
+y_true: Array
+of
+truth
+labels(must
+be
+same
+shape as y_pred).
+y_pred: Array
+of
+predicted
+labels(must
+be
+same
+shape as y_true).
+classes: Array
+of
+
+
+class labels(e.g.string form).If `None`, integer labels are used.
+
+
+figsize: Size
+of
+output
+figure(default=(10, 10)).
+text_size: Size
+of
+output
+figure
+text(default=15).
+norm: normalize
+values or not (default=False).
+savefig: save
+confusion
+matrix
+to
+file(default=False).
+
+Returns:
+A
+labelled
+confusion
+matrix
+plot
+comparing
+y_true and y_pred.
+
+Example
+usage:
+make_confusion_matrix(y_true=test_labels,  # ground truth test labels
+                      y_pred=y_preds,  # predicted labels
+                      classes=class_names,  # array of class label names
+                      figsize=(15, 15),
+                      text_size=10)
+"""  
+# Create the confustion matrix
+cm = confusion_matrix(y_true, y_pred)
+cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis] # normalize it
+n_classes = cm.shape[0] # find the number of classes we're dealing with
+
+# Plot the figure and make it pretty
+fig, ax = plt.subplots(figsize=figsize)
+cax = ax.matshow(cm, cmap=plt.cm.Blues) # colors will represent how 'correct' a class is, darker == better
+fig.colorbar(cax)
+
+# Are there a list of classes?
+if classes:
+  labels = classes
+else:
+  labels = np.arange(cm.shape[0])
+
+# Label the axes
+ax.set(title="Confusion Matrix",
+       xlabel="Predicted label",
+       ylabel="True label",
+       xticks=np.arange(n_classes), # create enough axis slots for each class
+       yticks=np.arange(n_classes), 
+       xticklabels=labels, # axes will labeled with class names (if they exist) or ints
+       yticklabels=labels)
+
+# Make x-axis labels appear on bottom
+ax.xaxis.set_label_position("bottom")
+ax.xaxis.tick_bottom()
+
+### Added: Rotate xticks for readability & increase font size (required due to such a large confusion matrix)
+plt.xticks(rotation=70, fontsize=text_size)
+plt.yticks(fontsize=text_size)
+
+# Set the threshold for different colors
+threshold = (cm.max() + cm.min()) / 2.
+
+# Plot the text on each cell
+for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+  if norm:
+    plt.text(j, i, f"{cm[i, j]} ({cm_norm[i, j]*100:.1f}%)",
+            horizontalalignment="center",
+            color="white" if cm[i, j] > threshold else "black",
+            size=text_size)
+  else:
+    plt.text(j, i, f"{cm[i, j]}",
+            horizontalalignment="center",
+            color="white" if cm[i, j] > threshold else "black",
+            size=text_size)
+
+# Save the figure to the current working directory
+if savefig:
+  fig.savefig("confusion_matrix.png")
+
+"""
+Right
+now
+our
+predictions and truth
+labels
+are in the
+form
+of
+integers, however, they
+'ll be much easier to understand if we get their actual names. We can do so using the class_names attribute on our test_data object."""
+
+# Get the class names
+class_names = test_data.class_names
+class_names
+
+# Plot a confusion matrix with all 25250 predictions, ground truth labels and 101 classes
+make_confusion_matrix(y_true=y_labels,
+                      y_pred=pred_classes,
+                      classes=class_names,
+                      figsize=(100, 100),
+                      text_size=20,
+                      norm=False,
+                      savefig=True)
+
+"""Woah! Now that's a big confusion matrix. It may look a little daunting at first but after zooming in a little, we can see how it gives us insight into which classes its getting "confused" on.
+
+The good news is, the majority of the predictions are right down the top left to bottom right diagonal, meaning they're correct.
+
+It looks like the model gets most confused on classes which look visualually similar, such as predicting filet_mignon for instances of pork_chop and chocolate_cake for instances of tiramisu.
+
+Since we're working on a classification problem, we can further evaluate our model's predictions using Scikit-Learn's classification_report() function.
+
+## Let's keep the evaluation train going, time for a classification report 
+
+scikit-learn has a helpful function for acquiring many different classification metrics per class (e.g presion, recall and F1) called [classification_report](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html), let's try it out.
+"""
+
+from sklearn.metrics import classification_report
+
+print(classification_report(y_true=y_labels,
+                            y_pred=pred_classes))
+
+"""The classification_report() outputs the precision, recall and f1-score's per class.
+
+A reminder:
+
+Precision - Proportion of true positives over total number of samples. Higher precision leads to less false positives (model predicts 1 when it should've been 0).
+Recall - Proportion of true positives over total number of true positives and false negatives (model predicts 0 when it should've been 1). Higher recall leads to less false negatives.
+F1 score - Combines precision and recall into one metric. 1 is best, 0 is worst.
+The above output is helpful but with so many classes, it's a bit hard to understand.
+
+Let's see if we make it easier with the help of a visualization.
+
+First, we'll get the output of classification_report() as a dictionary by setting output_dict=True.
+"""
+
+# Get a dictionary of the classification report
+
+classification_report_dict = classification_report(y_labels, pred_classes, output_dict=True)
+classification_report_dict
+
+"""Alright, there's still a fair few values here, how about we narrow down?
+
+Since the f1-score combines precision and recall in one metric, let's focus on that.
+
+To extract it, we'll create an empty dictionary called class_f1_scores and then loop through each item in classification_report_dict, appending the class name and f1-score as the key, value pairs in class_f1_scores.
+
+## Let's plot all of our classes F1-scores
+"""
+
+class_names[98]
+
+classification_report_dict["99"]["f1-score"]
+
+# Create empty dictionary
+class_f1_scores = {}
+# Loop through classification report dictionary items
+for k, v in classification_report_dict.items():
+    if k == "accuracy":  # stop once we get to accuracy key
+        break
+    else:
+        # Add class names and f1-scores to new dictionary
+        class_f1_scores[class_names[int(k)]] = v["f1-score"]
+class_f1_scores
+
+"""Looking good!
+
+It seems like our dictionary is ordered by the class names. However, I think if we're trying to visualize different scores, it might look nicer if they were in some kind of order.
+
+How about we turn our class_f1_scores dictionary into a pandas DataFrame and sort it in ascending fashion?
+"""
+
+# Trun f1-scores into dataframe for visualization
+import pandas as pd
+
+f1_scores = pd.DataFrame({"class_names": list(class_f1_scores.keys()),
+                          "f1-score": list(class_f1_scores.values())}).sort_values("f1-score", ascending=False)
+
+f1_scores[:10]
+
+from IPython.core.pylabtools import figsize
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(12, 25))
+scores = ax.barh(range(len(f1_scores)), f1_scores["f1-score"].values)  # get f1-scores values
+ax.set_yticks(range(len(f1_scores)))
+ax.set_yticklabels(f1_scores["class_names"])
+ax.set_xlabel("F1-score")
+ax.set_title("F1-scorees for 101 Different Food Classes(predicted by Food Vision mini")
+ax.invert_yaxis();
+
+# challenge: add values to the end of each bar of what actual f1-score is
+# (hint: use the "autolabel" function from here:https://matplotlib.org/2.0.2/examples/api/barchart_demo.html)
+
+"""Now that's a good looking graph! I mean, the text positioning could be improved a little but it'll do for now.
+
+Can you see how visualizing our model's predictions gives us a completely new insight into its performance?
+
+A few moments ago we only had an accuracy score but now we've got an indiciation of how well our model is performing on a class by class basis.
+
+It seems like our model performs fairly poorly on classes like apple_pie and ravioli while for classes like edamame and pho the performance is quite outstanding.
+
+Findings like these give us clues into where we could go next with our experiments. Perhaps we may have to collect more data on poor performing classes or perhaps the worst performing classes are just hard to make predictions on.
+
+🛠 Exercise: Visualize some of the most poor performing classes, do you notice any trends among them?
+
+## Visualizing predictions on test images 
+
+Now, this is the real test, how does our model go on food images not even in our test dataset(images of our own, we'll see this later on).
+
+To visualize our model's predictions on our own images, we'll need a function to load and preprocess images, specifically it will need to:     
+* Read  in a target image filepath using tf.io.read_file()
+* Turn the image into a Tensor using tf.io.decode_image().
+* Resize the image to be the same size as the images our model has been trained on (224 x 224) using tf.image.resize().
+* Scale the image to get all the pixel values between 0 & 1 if necessary.
+"""
