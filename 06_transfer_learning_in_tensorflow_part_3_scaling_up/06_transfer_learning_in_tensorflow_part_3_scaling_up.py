@@ -638,3 +638,173 @@ To visualize our model's predictions on our own images, we'll need a function to
 * Resize the image to be the same size as the images our model has been trained on (224 x 224) using tf.image.resize().
 * Scale the image to get all the pixel values between 0 & 1 if necessary.
 """
+def load_and_prep_image(filename, img_shape=224, scale=True):
+  """
+  Reads in an image from filename, turns it into a tensor and reshapes into
+  (224, 224, 3).
+
+  Parameters
+  ----------
+  filename (str): string filename of target image
+  img_shape (int): size to resize target image to, default 224
+  scale (bool): whether to scale pixel values to range(0, 1), default True
+  """
+  # Read in the image
+  img = tf.io.read_file(filename)
+  # Decode it into a tensor
+  img = tf.io.decode_image(img)
+  # Resize the image
+  img = tf.image.resize(img, [img_shape, img_shape])
+  if scale:
+    # Rescale the image (get all values between 0 and 1)
+    return img/255.
+  else:
+    return img # don't need to rescale images for efficientNet models in TensorFlow
+
+"""Now we've got a function to load and prepare target images, let's now write some code to visualize images, their target label and our model's predictions.
+
+Specifically, we'll write some code to :    
+1. Load a few random images from the test dataset 
+2. Make predictions on the loaded images  
+3. plot the original images(s) along with the model's predictions, prediction prebability and truth label 
+"""
+
+# Make preds on a series of random images
+import os
+import random
+
+plt.figure(figsize=(17, 10))
+for i in range(3):
+  # Choose a random image from a random class
+  class_name = random.choice(class_names)
+  filename = random.choice(os.listdir(test_dir + "/" + class_name))
+  filepath = test_dir + class_name + "/" + filename
+
+  # Load the image and make predictions
+  img = load_and_prep_image(filepath, scale=False) # don't scale images for EfficientNet predictions
+  pred_prob = model.predict(tf.expand_dims(img, axis=0)) # model accepts tensors of shape [None, 224, 224, 3]
+  pred_class = class_names[pred_prob.argmax()] # find the predicted class
+
+  # Plot the image(s)
+  plt.subplot(1, 3, i+1)
+  plt.imshow(img/255.)
+  if class_name == pred_class: # Change the color of text based on whether prediction is right or wrong
+    title_color = "g"
+  else:
+    title_color = "r"
+  plt.title(f"actual: {class_name}, pred: {pred_class}, prob: {pred_prob.max():.2f}", c=title_color)
+  plt.axis(False);
+
+"""##Finding the most wrong predictions
+
+It's a good idea to go through at least 100+ random instances of your model's predictions to get a good feel for how it's doing.
+
+After a while you might notice the model predicting on some images with a very high prediction probability, meaning it's very confident with its prediction but still getting the label wrong.
+
+These most wrong predictions can help to give further insight into your model's performance.
+
+So how about we write some code to collect all of the predictions where the model has output a high prediction probability for an image (e.g. 0.95+) but gotten the prediction wrong.
+
+We'll go through the following steps:
+
+ 1. Get all of the image file paths in the test dataset using the list_files() method.
+ 2. Create a pandas DataFrame of the image filepaths, ground truth labels, prediction classes, max prediction probabilities, ground truth class names and predicted class names.
+
+**Note:** We don't necessarily have to create a DataFrame like this but it'll help us visualize things as we go.
+
+3. Use our DataFrame to find all the wrong predictions (where the ground truth doesn't match the prediction).
+4. Sort the DataFrame based on wrong predictions and highest max prediction probabilities.
+5. Visualize the images with the highest prediction probabilities but have the wrong prediction.
+"""
+
+# 1. Get the filenames of all of our test data
+filepaths = []
+for filepath in test_data.list_files("101_food_classes_10_percent/test/*/*.jpg",
+                                     shuffle=False):
+  filepaths.append(filepath.numpy())
+filepaths[:10]
+
+# 2. Create a dataframe out of current prediction data for analysis
+import pandas as pd
+pred_df = pd.DataFrame({"img_path": filepaths,
+                        "y_true": y_labels,
+                        "y_pred": pred_classes,
+                        "pred_conf": pred_prob.max(axis=1), # get the maximum prediction probability value
+                        "y_true_classname": [class_names[i] for i in y_labels],
+                        "y_pred_classname": [class_names[i] for i in pred_classes]})
+pred_df.head()
+
+# 3. Is the prediction correct?
+pred_df["pred_correct"] = pred_df["y_true"] == pred_df["y_pred"]
+pred_df.head()
+
+# 4. Sort our DataFrame to have most wrong predictions at the top
+top_100_wrong = pred_df[pred_df["pred_correct"] == False].sort_values("pred_conf", ascending=False)[:100]
+top_100_wrong.head(20)
+
+# 5. Visualize the test data samples which have the wrong prediction but highest pred probability
+images_to_view = 9
+start_index = 10 # change the start index to view more
+plt.figure(figsize=(15, 10))
+for i, row in enumerate(top_100_wrong[start_index:start_index+images_to_view].itertuples()):
+  plt.subplot(3, 3, i+1)
+  img = load_and_prep_image(row[1], scale=True)
+  _, _, _, _, pred_prob, y_true, y_pred, _ = row # only interested in a few parameters of each row
+  plt.imshow(img)
+  plt.title(f"actual: {y_true}, pred: {y_pred} \nprob: {pred_prob:.2f}")
+  plt.axis(False)
+
+"""Going through the model's most wrong predictions can usually help figure out a couple of things:
+
+**Some of the labels might be wrong** - If our model ends up being good enough, it may actually learning to predict very well on certain classes. This means some images which the model predicts the right label may show up as wrong if the ground truth label is wrong. If this is the case, we can often use our model to help us improve the labels in our dataset(s) and in turn, potentially making future models better. This process of using the model to help improve labels is often referred to as active learning.
+
+**Could more samples be collected?**- If there's a recurring pattern for a certain class being poorly predicted on, perhaps it's a good idea to collect more samples of that particular class in different scenarios to improve further models.
+
+##Test out the big dog model on test images as well as custom images of food
+
+So far we've visualized some our model's predictions from the test dataset but it's time for the real test: using our model to make predictions on our own custom images of food.
+
+For this you might want to upload your own images to Google Colab or by putting them in a folder you can load into the notebook.
+
+In my case, I've prepared my own small dataset of six or so images of various foods.
+
+Let's download them and unzip them.
+"""
+
+# Download some custom images from Google Storage
+# Note: you can upload your own custom images to Google Colab using the "upload" button in the Files tab
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/custom_food_images.zip
+
+unzip_data("custom_food_images.zip")
+
+# Get custom food images filepaths
+custom_food_images = ["custom_food_images/" + img_path for img_path in os.listdir("custom_food_images")]
+custom_food_images
+
+# Make predictions on custom food images
+for img in custom_food_images:
+  img = load_and_prep_image(img, scale=False) # load in target image and turn it into tensor
+  pred_prob = model.predict(tf.expand_dims(img, axis=0)) # make prediction on image with shape [None, 224, 224, 3]
+  pred_class = class_names[pred_prob.argmax()] # find the predicted class label
+  # Plot the image with appropriate annotations
+  plt.figure()
+  plt.imshow(img/255.) # imshow() requires float inputs to be normalized
+  plt.title(f"pred: {pred_class}, prob: {pred_prob.max():.2f}")
+  plt.axis(False)
+
+"""Two thumbs up! How cool is that?! Our Food Vision model has come to life!
+
+Seeing a machine learning model work on a premade test dataset is cool but seeing it work on your own data is mind blowing.
+
+And guess what... our model got these incredible results (10%+ better than the baseline) with only 10% of the training images.
+
+I wonder what would happen if we trained a model with all of the data (100% of the training data from Food101 instead of 10%)? Hint: that's your task in the next notebook.
+
+## Exercises
+1. Take 3 of your own photos of food and use the trained model to make predictions on them, share your predictions with the other students in Discord and show off your Food Vision model 🍔👁.
+2. Train a feature-extraction transfer learning model for 10 epochs on the same data and compare its performance versus a model which used feature extraction for 5 epochs and fine-tuning for 5 epochs (like we've used in this notebook). Which method is better?
+3. Recreate our first model (the feature extraction model) with mixed_precision turned on.
+- Does it make the model train faster?
+- Does it effect the accuracy or performance of our model?
+- What's the advatanges of using mixed_precision training?
+"""
