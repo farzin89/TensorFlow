@@ -62,3 +62,96 @@ print("food101" in datasets_list) # is our target dataset in the list of TFDS da
                                            as_supervised = True, # data gets returned in tuple format(data,label)
                                            with_info = True)
 
+# Features of Food101 from TFDS
+ds_info.features
+
+# Get the class name
+class_names = ds_info.features["label"].names
+class_names[:10]
+
+"""## Exploring the Food101 data from TensorFlow Datasets 
+
+To become one with our data,we want to find:
+* Class names
+* The shape of our input data(image tensors)
+* The datatype of our input data
+* What the labels look like(e.g are they one-hot encoded or are they label enconded
+* Dothe labels match up with the class names?
+
+"""
+
+# Take one sample of training data
+train_one_sample = train_data.take(1) # sample are in format (image_tensor,label)
+
+# What does one sample of our training data look like?
+train_one_sample
+
+# Output info about our training sample
+ for image,label in train_one_sample:
+   print(f"""
+   Image shape: {image.shape}
+   Image datatype:{image.dtype}
+   Target class from Food101 (tensor form):{label}
+   Class name(str form):{class_names[label.numpy()]}
+   """)
+
+# what does our image tensor from TFDS's Food101 look like?
+image
+
+# What are the min and max values of our image tensor?
+import tensorflow as tf
+tf.reduce_min(image), tf.reduce_max(image)
+
+"""## Plot an image from Tensorflow Datasets
+
+"""
+
+# plot an image tensor
+import matplotlib.pyplot as plt
+plt.imshow(image)
+plt.title(class_names[label.numpy()]) # Add title to image to verify the label is associated with the tight image
+plt.axis(False);
+
+"""## Create preprocessing functions for our data 
+
+Neural networkd perform best when data is in a certain way(e.g. batched,normalized,etc).
+
+However, not all data(including data from Tensorflow Datasets) comes like this.
+
+So in order to get it ready for a neural network, you'll often have to write preprocessing functions and map it to your data.
+
+what we know about our data:
+* In 'uint8' datatype
+* Comprised of all different size tensorse( different sized images)
+* Not scaled (the pixel values are between 0 & 255)
+
+what we know models like:
+* Data in 'float32' dtype(or for mixed precision 'float16' and 'float32')
+* For batches, TensorFlow like all of the tensors within a batch to be of the same size 
+* Scaled (values between 0 & 1) also normlized tensors generally perform better 
+
+with these points in mind, we've got a few things we can tackle with a preprocessing function.
+
+Since we're going to be using an EfficientNetBX pretrained model from tf.kerad.applications we don't need to rescale our data( these architectures have rescaling built-in).
+
+This means our functions needs to:
+1. Reshape our images to all the same size 
+2. Convert the dtype of our image tensors from 'unint8' to 'float32'
+"""
+
+#make a function for preprocessing images
+def preprocess_img (image,label,img_shape=224):
+  """
+  Converts image datatype from 'unit8' -> 'float32' and reshapes
+  image to [img_shape,img_shape,colour_channels]
+  """
+  image = tf.image.resize(image,[img_shape,img_shape]) # reshape target image
+  #image = image/255. # scale image values (not required with EfficientNetBX models from tf.keras.applications)
+  return tf.cast(image, tf.float32),label #return(float32_image,label) tuple
+
+# Preprocess a single sample image and check the outputs
+preprocessed_img = preprocess_img(image, label)[0]
+print(f"Image before preprocessing:\n {image[:2]}...,\nShape: {image.shape},\nDatatype: {image.dtype}\n")
+print(f"Image after preprocessing:\n {preprocessed_img[:2]}...,\nShape: {preprocessed_img.shape},\nDatatype: {preprocessed_img.dtype}")
+
+
