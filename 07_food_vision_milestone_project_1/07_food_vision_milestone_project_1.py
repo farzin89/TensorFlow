@@ -155,3 +155,45 @@ print(f"Image before preprocessing:\n {image[:2]}...,\nShape: {image.shape},\nDa
 print(f"Image after preprocessing:\n {preprocessed_img[:2]}...,\nShape: {preprocessed_img.shape},\nDatatype: {preprocessed_img.dtype}")
 
 
+"""## Batch and prepare datasets
+we are now going to make our data input pipeline run really fast.
+
+For more resources on this, I'd highly recommend going through the following guide : https://www.tensorflow.org/guide/data_performance
+
+"""
+
+from tensorflow.python.data.ops.dataset_ops import AUTOTUNE
+from pyparsing.helpers import match_previous_expr
+# Map preprocessing function to training (and parallelize)
+train_data = train_data.map(map_func=preprocess_img,num_parallel_calls=tf.data.AUTOTUNE)
+#shuffle train_data and turn it into batches and prefetch it (load it faster)
+train_data = train_data.shuffle(buffer_size=1000).batch(batch_size=32).prefetch(buffer_size=AUTOTUNE)
+
+# Map preprocessing function to test data
+test_data = test_data.map(preprocess_img,num_parallel_calls=tf.data.AUTOTUNE).batch(32).prefetch(tf.data.AUTOTUNE)
+
+train_data,test_data
+
+"""### what happen on previous code
+"Hey,TenseFlow,map this preprocessing function(preprocess_img) across our training dataset, then shuffle a number of elements and then batch them together and finally make sure you prepare new batches(prefetch)whilst the model is looking through(finding patterns)the current batch."
+
+## Creating modeling callbacks
+
+We're going to create a couple of callbacks to help us while our model trains:
+
+* TensorBoard callback to log training results(so we can visualize them later if need be)
+* ModelCheckpoint callback to save our model's progress after feature extraction
+"""
+
+# Create TensorBoard callback (already have "create_tensorboard_callback()" from a previous notebook)
+from helper_functions import create_tensorboard_callback
+
+# Create ModelCheckpoint callback to save model's progress
+checkpoint_path = "model_checkpoints/cp.ckpt" # saving weights requires ".ckpt" extension
+model_checkpoint = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
+                                                      montior="val_accuracy", # save the model weights with best validation accuracy
+                                                      save_best_only=True, # only save the best weights
+                                                      save_weights_only=True, # only save model weights (not whole model)
+                                                      verbose=1) # don't print out whether or not model is being saved
+
+
