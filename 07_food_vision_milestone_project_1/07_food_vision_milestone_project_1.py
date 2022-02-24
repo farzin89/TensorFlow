@@ -196,4 +196,81 @@ model_checkpoint = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
                                                       save_weights_only=True, # only save model weights (not whole model)
                                                       verbose=1) # don't print out whether or not model is being saved
 
+"""## Setup mixed precision training 
+
+First and foremost, for a deeper understanding of mixed precision training, check out the TensorFlow guid for mixed precision : https://www.tensorflow.org/guide/mixed_precision
+
+Mixed precision utilizes a combination of float32 and float16 data types to speed up model performce.
+"""
+
+# turn on mixed precision training
+from tensorflow.keras import mixed_precision
+mixed_precision.set_global_policy("mixed_float16") # set global data policy to mixed precision
+
+mixed_precision.global_policy()
+
+"""## Build feature extraction model"""
+
+from tensorflow.keras import layers
+from tensorflow.keras.layers.experimental import preprocessing
+
+# create base model
+input_shape = (244,244,3)
+base_model = tf.keras.applications.EfficientNetB0(include_top = False)
+base_model.trainable = False
+
+# create functional model
+
+inputs= layers.Input(shape = input_shape,name="input_layer")
+#Note : EfficientNetBX models have rescalind built-in but if your model doesn't you can have a layer like below
+# x = preproccesing.Rescaling(1./255)(x)
+x = base_model(inputs,training=False) # make sure layers which should be in inference mode only stay like that
+x = layers.GlobalAveragePooling2D()(x)
+x = layers.Dense(len(class_names))(x)
+outputs = layers.Activation("softmax",dtype= tf.float32,name="softmax_float32")(x)
+model = tf.keras.Model(inputs,outputs)
+
+# compile the model
+model.compile(loss ="sparse_categorical_crossentropy",
+              optimizer = tf.keras.optimizers.Adam(),
+              metrics = ["accuracy"])
+
+model.summary()
+
+"""## Checking layer dtype policies(are we using mixed precision?)"""
+
+# check the dtype_policy attributes of layers in our model
+for layer in model.layers:
+  print(layer.name, layer.trainable,layer.dtype,layer.dtype_policy)
+
+"""Going through the above we see:
+
+* 'layer.name': the human readable name of a particular layer 
+* 'layer.trainable': is the layer trainable or not? (if 'False",the weights are frozen)
+* 'layer.dtype': the datatype a layer stores its variables in
+* 'layer.dtype_policy' : the data type policy a layer computes on its variables with  
+"""
+
+#ckeck the dtype_policy attributes of layers in the base model
+for layer in model.layers[1].layers[:20]: # check the layers of the base model (layer at index 1 of 'model')
+  print(layer.name, layer.trainable,layer.dtype,layer.dtype_policy)
+
+mixed_precision.global_policy()
+
+"""## Fit the feature extraction model
+
+If our goal is to fine-tune a pretrained model, the general order of doing things is:
+1. Build a feature extraction model (train a couple output layers with base layers frozen)
+2. Fine-tune some of the frozen layers
+"""
+
+# Fit the feature extraction model with callbacks
+history_101_food_classes_feature_extract = model.fit(train_data,
+                                                     epochs = 3,
+                                                     steps_per_epoch = (len(train_data)),
+                                                     validation_data = test_data,
+                                                     validation_steps = int(0.15 * len(test_data)),
+                                                     callbacks = [create_tensorboard_callback("training_logs",
+                                                                                              experiment_name= "efficientnetb0_101_classes_all_data_feature_extract"),
+                                                                            model_checkpoint])
 
