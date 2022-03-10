@@ -53,3 +53,43 @@ train_df.head()
 train_df["text"][1]
 
 # shuffle training dataframe
+train_df_shuffled = train_df.sample(frac = 1, random_state = 42)
+train_df_shuffled.head()
+
+# what does the test datafram look like?
+test_df.head()
+
+# how many examples of each class ?
+train_df.target.value_counts()
+
+# how many total samples ?
+len(train_df), len(test_df)
+
+# Let's Visualize some random training examples
+import random
+random_index = random.randint(0,len(train_df)-5) #create random indexs not higher than the total number of samples
+for row in train_df_shuffled[["text","target"]][random_index:random_index + 5].itertuples():
+  _,text,target = row
+  print(f"Target:{target}","(real disaster)" if target > 0 else "(not real disaster)")
+  print(f"Text:\n{text}\n")
+  print("---\n")
+
+"""### Split data into training and validation sets"""
+
+from sklearn.model_selection import train_test_split
+
+# use train_test_split to split training data into training and validation sets
+train_sentences,val_sentences,train_labels, val_labels = train_test_split(train_df_shuffled["text"].to_numpy(),
+                                                                          train_df_shuffled["target"].to_numpy(),
+                                                                          test_size = 0.1, # use 10% of training data for validation
+                                                                          random_state = 42)
+
+# check the lengths
+len(train_sentences),len(train_labels),len(val_sentences),len(val_labels)
+
+len(train_df_shuffled)
+
+# check the first 10 samples
+train_sentences[:10],train_labels[:10]
+
+"""## Convert text into numbers """
