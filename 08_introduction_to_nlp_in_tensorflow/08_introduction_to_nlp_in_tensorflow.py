@@ -93,3 +93,78 @@ len(train_df_shuffled)
 train_sentences[:10],train_labels[:10]
 
 """## Convert text into numbers """
+Wonderful! We've got a training set and a validation set containing Tweets and labels.
+
+Our labels are in numerical form (0 and 1) but our Tweets are in string form.
+
+#### Question:  What do you think we have to do before we can use a machine learning algorithm with our text data?
+If you answered something along the lines of "turn it into numbers", you're correct. A machine learning algorithm requires its inputs to be in numerical form.
+
+In NLP, there are two main concepts for turning text into numbers:
+
+* Tokenization - A straight mapping from word or character or sub-word to a numerical value. There are three main levels of tokenization:
+
+1. Using word-level tokenization with the sentence "I love TensorFlow" might result in "I" being 0, "love" being 1 and "TensorFlow" being 2. In this case, every word in a sequence considered a single token.
+2. Character-level tokenization, such as converting the letters A-Z to values 1-26. In this case, every character in a sequence considered a single token.
+3. Sub-word tokenization is in between word-level and character-level tokenization. It involves breaking invidual words into smaller parts and then converting those smaller parts into numbers. For example, "my favourite food is pineapple pizza" might become "my, fav, avour, rite, fo, oo, od, is, pin, ine, app, le, piz, za". After doing this, these sub-words would then be mapped to a numerical value. In this case, every word could be considered multiple tokens
+
+* Embeddings - An embedding is a representation of natural language which can be learned. Representation comes in the form of a feature vector. For example, the word "dance" could be represented by the 5-dimensional vector [-0.8547, 0.4559, -0.3332, 0.9877, 0.1112]. It's important to note here, the size of the feature vector is tuneable. There are two ways to use embeddings:
+1. Create your own embedding - Once your text has been turned into numbers (required for an embedding), you can put them through an embedding layer (such as tf.keras.layers.Embedding) and an embedding representation will be learned during model training.
+2. Reuse a pre-learned embedding - Many pre-trained embeddings exist online. These pre-trained embeddings have often been learned on large corpuses of text (such as all of Wikipedia) and thus have a good underlying representation of natural language. You can use a pre-trained embedding to initialize your model and fine-tune it to your own specific task.
+
+Question: What level of tokenzation should I use? What embedding should should I choose?
+It depends on your problem. You could try character-level tokenization/embeddings and word-level tokenization/embeddings and see which perform best. You might even want to try stacking them (e.g. combining the outputs of your embedding layers using tf.keras.layers.concatenate).
+
+If you're looking for pre-trained word embeddings, Word2vec embeddings, GloVe embeddings and many of the options available on TensorFlow Hub are great places to start.
+
+Note: Much like searching for a pre-trained computer vision model, you can search for pre-trained word embeddings to use for your problem. Try searching for something like "use pre-trained word embeddings in TensorFlow"
+
+## Text vectorization (tokenization)
+
+Enough talking about tokenization and embeddings, let's create some.
+
+We'll practice tokenzation (mapping our words to numbers) first
+
+To tokenize our words, we'll use the helpful preprocessing layer tf.keras.layers.experimental.preprocessing.TextVectorization.
+
+The TextVectorization layer takes the following parameters:
+
+* max_tokens - The maximum number of words in your vocabulary (e.g. 20000 or the number of unique words in your text), includes a value for OOV (out of vocabulary) tokens.
+
+* standardize - Method for standardizing text. Default is "lower_and_strip_punctuation" which lowers text and removes all punctuation marks.
+
+* split - How to split text, default is "whitespace" which splits on spaces.
+* ngrams - How many words to contain per token split, for example, ngrams=2 splits tokens into continuous sequences of 2.
+* output_mode - How to output tokens, can be "int" (integer mapping), "binary" (one-hot encoding), "count" or "tf-idf". See documentation for more.
+* output_sequence_length - Length of tokenized sequence to output. For example, if output_sequence_length=150, all tokenized sequences will be 150 tokens long.
+* pad_to_max_tokens - Defaults to False, if True, the output feature axis will be padded to max_tokens even if the number of unique tokens in the vocabulary is less than max_tokens. Only valid in certain modes, see docs for more.
+
+this is source for study more about tokenization : https://www.tensorflow.org/api_docs/python/tf/keras/layers/TextVectorization
+"""
+
+train_sentences[:5]
+
+import tensorflow as tf
+from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
+
+# Use the default TextVectorization parameters 
+text_vectorizer = TextVectorization(max_tokens= None, # how many worlds in the vocabulary (automatically add <oov>)
+                                    standardize="lower_and_strip_punctuation",
+                                    split = "whitespace",
+                                    ngrams = None, # create groups of n-words?
+                                    output_mode = "int", # how to map tokens to numbers
+                                    output_sequence_length = None)# how long do you want sequences to be
+                                    # pad_to_max_tokens=True) # Not valid if using max_tokens=None
+
+len(train_sentences[0].split())
+
+# Find the average number of tokens (words) in the training tweets
+ round(sum([len(i.split()) for i in train_sentences])/ len(train_sentences))
+
+# Setup text vectorization variables 
+ max_vocab_length = 10000 # max number of words to have in our vocabulary
+ max_length = 15 # max length our sequences will be (e.g. how many words from a tweet does a model see ? )
+
+ tezt_vectorizer = TextVectorization(max_tokens= max_vocab_length,
+                                     output_mode ="int",
+                                     output_sequence_length = max_length)
